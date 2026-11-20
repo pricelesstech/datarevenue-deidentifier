@@ -222,7 +222,8 @@ def build_html(summary: dict, answers: dict, cat: dict, created: _dt.datetime) -
             H.append("</div>")
 
     H.append("<h2>How this sample was made</h2><div class='note small'>Created on the data "
-             "owner's own computer with no internet connection. Names, addresses, phone "
+             "owner's own computer; the original files were never uploaded. Names, "
+             "addresses, phone "
              "numbers, emails and ID numbers were removed; patient numbers were replaced with "
              "random study codes; dates were reduced to the year; ZIP codes to 3 digits; "
              "text printed on images was found and blacked out; all image metadata was "
