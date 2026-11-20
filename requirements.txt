@@ -3,7 +3,9 @@ pillow==13.0.0
 openpyxl==3.1.5
 numpy==2.5.5
 rapidocr-onnxruntime==1.4.4
-onnxruntime==1.32.0
+onnxruntime==1.32.0; sys_platform != "darwin" or platform_machine != "x86_64"
+# last onnxruntime release with Intel Mac wheels
+onnxruntime==1.23.2; sys_platform == "darwin" and platform_machine == "x86_64"
 opencv-python==5.1.0.95
 pylibjpeg==2.1.0
 pylibjpeg-libjpeg==2.5.0
