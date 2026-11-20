@@ -1,6 +1,7 @@
 """End-to-end: fake PHI in, nothing identifying out of the SHARE folder."""
 import csv
 import os
+import re
 import sys
 
 import numpy as np
@@ -76,6 +77,8 @@ def test_no_phi_bytes_in_share_folder(result):
         else:
             blob = open(p, "rb").read().decode("latin-1").lower()
         blob += " " + os.path.basename(p).lower()
+        # random study codes (P + 8 digits) can contain any digit run by chance
+        blob = re.sub(r"p\d{8}", "<code>", blob)
         for term in PHI:
             assert term not in blob, f"{term!r} leaked in {p}"
 

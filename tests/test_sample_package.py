@@ -2,6 +2,7 @@
 import csv
 import json
 import os
+import re
 import sys
 import zipfile
 
@@ -95,6 +96,8 @@ def test_zip_contents_and_no_phi(built):
         for n in names:
             if n.endswith((".html", ".json", ".txt", ".csv")):
                 blob = z.read(n).decode("utf-8", "ignore").lower()
+                # random study codes (P + 8 digits) can contain any digit run by chance
+                blob = re.sub(r"p\d{8}", "<code>", blob)
                 for term in PHI:
                     assert term not in blob, f"{term!r} in {n}"
 
