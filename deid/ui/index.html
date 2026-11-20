@@ -1,339 +1,339 @@
-<!doctyp. html>
-<html lang=".n">
-<h.ad>
-<m.ta chars.t="utf-8">
-<titl.>Data R.v.nu. D.-Id.ntifi.r</titl.>
-<styl.>
-:root{--navy:#0B2A4A;--navy2:#123b63;--t.al:#0E8C8C;--t.al-l:#.5f4f4;--ink:#1d2733;--mut.:#66727f;--lin.:#dd.4.a;--bg:#f4f7f9;--r.d:#b3403f}
-*{box-sizing:bord.r-box}
-html,body{margin:0;h.ight:100%}
-body{font:15px/1.5 -appl.-syst.m,BlinkMacSyst.mFont,"S.go. UI",Roboto,H.lv.tica,Arial,sans-s.rif;color:var(--ink);background:var(--bg);display:fl.x;fl.x-dir.ction:column;-w.bkit-us.r-s.l.ct:non.;us.r-s.l.ct:non.}
-input,t.xtar.a{-w.bkit-us.r-s.l.ct:t.xt;us.r-s.l.ct:t.xt}
-.top{background:var(--navy);color:#fff;padding:14px 28px;display:fl.x;align-it.ms:c.nt.r;gap:12px;fl.x:non.}
-.top .brand{font-w.ight:600;l.tt.r-spacing:.2px}
-.top .lock{margin-l.ft:auto;font-siz.:12.5px;color:#b9cadb;display:fl.x;align-it.ms:c.nt.r;gap:6px}
-.st.ps{display:fl.x;gap:6px;padding:14px 28px 0;fl.x:non.}
-.st.ps div{fl.x:1;h.ight:4px;bord.r-radius:2px;background:#d9.2.9}
-.st.ps div.on{background:var(--t.al)}
-main{fl.x:1;ov.rflow:auto;padding:22px 28px 28px}
-.scr..n{display:non.;max-width:760px;margin:0 auto;animation:fad. .25s .as.}
-.scr..n.on{display:block}
-@k.yfram.s fad.{from{opacity:0;transform:translat.Y(4px)}to{opacity:1;transform:non.}}
-h1{font-siz.:28px;lin.-h.ight:1.2;color:var(--navy);margin:8px 0 8px}
-h2{font-siz.:22px;color:var(--navy);margin:4px 0 6px}
-.l.ad{color:var(--mut.);font-siz.:16px;margin:0 0 22px}
-.f.at{display:grid;grid-t.mplat.-columns:r.p.at(3,1fr);gap:12px;margin:22px 0 28px}
-.f.at div{background:#fff;bord.r:1px solid var(--lin.);bord.r-radius:12px;padding:16px}
-.f.at b{display:block;color:var(--navy);margin:8px 0 2px}
-.f.at span{color:var(--mut.);font-siz.:13.5px}
-.ico{width:34px;h.ight:34px;bord.r-radius:9px;background:var(--t.al-l);display:fl.x;align-it.ms:c.nt.r;justify-cont.nt:c.nt.r}
-.btn{app.aranc.:non.;bord.r:non.;background:var(--t.al);color:#fff;font:600 15px/1 inh.rit;padding:13px 22px;bord.r-radius:10px;cursor:point.r}
-.btn:hov.r{filt.r:brightn.ss(1.07)}.btn:disabl.d{background:#a9bcc4;cursor:d.fault;filt.r:non.}
-.btn.ghost{background:#fff;color:var(--navy);bord.r:1px solid var(--lin.)}
-.btn.link{background:non.;color:var(--t.al);padding:8px 0}
-.row{display:fl.x;gap:10px;align-it.ms:c.nt.r;fl.x-wrap:wrap}
-.spac.r{fl.x:1}
-lab.l.f{display:block;font-w.ight:600;margin:14px 0 6px}
-input[typ.=t.xt],input[typ.=.mail],t.xtar.a{width:100%;padding:11px 12px;bord.r:1px solid var(--lin.);bord.r-radius:9px;font:inh.rit;background:#fff}
-input:focus,t.xtar.a:focus{outlin.:2px solid var(--t.al);bord.r-color:transpar.nt}
-.hint{color:var(--mut.);font-siz.:13px;margin-top:4px}
-.drop{bord.r:2px dash.d #b7c7d3;bord.r-radius:16px;background:#fff;padding:38px 20px;t.xt-align:c.nt.r;transition:.15s}
-.drop.ov.r{bord.r-color:var(--t.al);background:var(--t.al-l)}
-.drop b{display:block;font-siz.:18px;color:var(--navy);margin:10px 0 4px}
-.chips{display:fl.x;gap:8px;fl.x-wrap:wrap;margin:16px 0}
-.chip{background:#fff;bord.r:1px solid var(--lin.);bord.r-radius:20px;padding:6px 12px;font-siz.:13.5px}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Data Revenue De-Identifier</title>
+<style>
+:root{--navy:#0B2A4A;--navy2:#123b63;--teal:#0E8C8C;--teal-l:#e5f4f4;--ink:#1d2733;--mute:#66727f;--line:#dde4ea;--bg:#f4f7f9;--red:#b3403f}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);display:flex;flex-direction:column;-webkit-user-select:none;user-select:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+.top{background:var(--navy);color:#fff;padding:14px 28px;display:flex;align-items:center;gap:12px;flex:none}
+.top .brand{font-weight:600;letter-spacing:.2px}
+.top .lock{margin-left:auto;font-size:12.5px;color:#b9cadb;display:flex;align-items:center;gap:6px}
+.steps{display:flex;gap:6px;padding:14px 28px 0;flex:none}
+.steps div{flex:1;height:4px;border-radius:2px;background:#d9e2e9}
+.steps div.on{background:var(--teal)}
+main{flex:1;overflow:auto;padding:22px 28px 28px}
+.screen{display:none;max-width:760px;margin:0 auto;animation:fade .25s ease}
+.screen.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+h1{font-size:28px;line-height:1.2;color:var(--navy);margin:8px 0 8px}
+h2{font-size:22px;color:var(--navy);margin:4px 0 6px}
+.lead{color:var(--mute);font-size:16px;margin:0 0 22px}
+.feat{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0 28px}
+.feat>div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px}
+.feat b{display:block;color:var(--navy);margin:8px 0 2px}
+.feat span{color:var(--mute);font-size:13.5px}
+.ico{width:34px;height:34px;border-radius:9px;background:var(--teal-l);display:flex;align-items:center;justify-content:center}
+.btn{appearance:none;border:none;background:var(--teal);color:#fff;font:600 15px/1 inherit;padding:13px 22px;border-radius:10px;cursor:pointer}
+.btn:hover{filter:brightness(1.07)}.btn:disabled{background:#a9bcc4;cursor:default;filter:none}
+.btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--line)}
+.btn.link{background:none;color:var(--teal);padding:8px 0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+label.f{display:block;font-weight:600;margin:14px 0 6px}
+input[type=text],input[type=email],textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font:inherit;background:#fff}
+input:focus,textarea:focus{outline:2px solid var(--teal);border-color:transparent}
+.hint{color:var(--mute);font-size:13px;margin-top:4px}
+.drop{border:2px dashed #b7c7d3;border-radius:16px;background:#fff;padding:38px 20px;text-align:center;transition:.15s}
+.drop.over{border-color:var(--teal);background:var(--teal-l)}
+.drop b{display:block;font-size:18px;color:var(--navy);margin:10px 0 4px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.chip{background:#fff;border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:13.5px}
 .chip b{color:var(--navy)}
-.choic.{display:grid;gap:10px;margin:14px 0}
-.opt{display:fl.x;gap:12px;align-it.ms:fl.x-start;background:#fff;bord.r:1px solid var(--lin.);bord.r-radius:11px;padding:12px 14px;cursor:point.r}
-.opt:hov.r{bord.r-color:#9fc3c6}
-.opt.s.l{bord.r-color:var(--t.al);box-shadow:0 0 0 1px var(--t.al);background:#fbf.f.}
-.opt .dot{fl.x:non.;width:18px;h.ight:18px;bord.r-radius:50%;bord.r:2px solid #b8c6d1;margin-top:2px}
-.opt.s.l .dot{bord.r:5px solid var(--t.al)}
-.opt.multi .dot{bord.r-radius:5px}
-.opt.multi.s.l .dot{bord.r:2px solid var(--t.al);background:var(--t.al)}
-.opt small{display:block;color:var(--mut.)}
-.q{background:#fff;bord.r:1px solid var(--lin.);bord.r-radius:14px;padding:18px 20px;margin:14px 0}
-.q.missing{bord.r-color:var(--r.d);box-shadow:0 0 0 1px var(--r.d)}
-.q h3{margin:0 0 4px;font-siz.:16px;color:var(--navy)}
-.q .opts{display:grid;grid-t.mplat.-columns:1fr 1fr;gap:8px;margin-top:10px}
-.q .opts .opt{padding:9px 12px;font-siz.:14px}
-.prog{position:sticky;top:-22px;z-ind.x:2;background:var(--bg);padding:10px 0 12px;margin:-10px 0 4px}
-.pbar{h.ight:8px;background:#df.7.d;bord.r-radius:4px;ov.rflow:hidd.n}
-.pbar i{display:block;h.ight:100%;background:var(--t.al);width:0;transition:width .3s}
-.pmsg{font-siz.:13px;color:var(--mut.);margin-top:6px;display:fl.x}
-.pmsg span:last-child{margin-l.ft:auto}
-d.tails{background:#fff;bord.r:1px solid var(--lin.);bord.r-radius:12px;padding:10px 16px;margin:14px 0}
-summary{cursor:point.r;font-w.ight:600;color:var(--navy)}
-tabl.{width:100%;bord.r-collaps.:collaps.;margin-top:10px;font-siz.:13.5px}
-td,th{padding:6px 6px;bord.r-bottom:1px solid var(--lin.);t.xt-align:l.ft}
-s.l.ct{font:inh.rit;padding:5px 6px;bord.r:1px solid var(--lin.);bord.r-radius:7px;max-width:290px;background:#fff}
-.don.-ico{width:64px;h.ight:64px;bord.r-radius:50%;background:var(--t.al-l);display:fl.x;align-it.ms:c.nt.r;justify-cont.nt:c.nt.r;margin:10px 0 8px}
-.fil.{display:fl.x;align-it.ms:c.nt.r;gap:12px;background:#fff;bord.r:1px solid var(--lin.);bord.r-radius:12px;padding:14px 16px;margin:16px 0}
-.fil. b{display:block;word-br.ak:br.ak-all}
-.warn{background:#fff7.8;bord.r:1px solid #f0d9a8;bord.r-radius:10px;padding:10px 14px;font-siz.:13.5px;margin:12px 0}
-..rr{color:var(--r.d);font-siz.:13.5px;margin-top:8px;min-h.ight:1.m}
-.spin{width:44px;h.ight:44px;bord.r:4px solid #d7.3.a;bord.r-top-color:var(--t.al);bord.r-radius:50%;animation:sp 1s lin.ar infinit.;margin:30px auto 10px}
-@k.yfram.s sp{to{transform:rotat.(360d.g)}}
-.c.nt.r{t.xt-align:c.nt.r}
-.tag{display:inlin.-block;padding:1px 8px;bord.r-radius:10px;font-siz.:11.5px;font-w.ight:600;background:var(--t.al-l);color:var(--t.al);v.rtical-align:1px}
-</styl.>
-</h.ad>
+.choice{display:grid;gap:10px;margin:14px 0}
+.opt{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px 14px;cursor:pointer}
+.opt:hover{border-color:#9fc3c6}
+.opt.sel{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal);background:#fbfefe}
+.opt .dot{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid #b8c6d1;margin-top:2px}
+.opt.sel .dot{border:5px solid var(--teal)}
+.opt.multi .dot{border-radius:5px}
+.opt.multi.sel .dot{border:2px solid var(--teal);background:var(--teal)}
+.opt small{display:block;color:var(--mute)}
+.q{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.q.missing{border-color:var(--red);box-shadow:0 0 0 1px var(--red)}
+.q h3{margin:0 0 4px;font-size:16px;color:var(--navy)}
+.q .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.q .opts .opt{padding:9px 12px;font-size:14px}
+.prog{position:sticky;top:-22px;z-index:2;background:var(--bg);padding:10px 0 12px;margin:-10px 0 4px}
+.pbar{height:8px;background:#dfe7ed;border-radius:4px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--teal);width:0;transition:width .3s}
+.pmsg{font-size:13px;color:var(--mute);margin-top:6px;display:flex}
+.pmsg span:last-child{margin-left:auto}
+details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin:14px 0}
+summary{cursor:pointer;font-weight:600;color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13.5px}
+td,th{padding:6px 6px;border-bottom:1px solid var(--line);text-align:left}
+select{font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:7px;max-width:290px;background:#fff}
+.done-ico{width:64px;height:64px;border-radius:50%;background:var(--teal-l);display:flex;align-items:center;justify-content:center;margin:10px 0 8px}
+.file{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:16px 0}
+.file b{display:block;word-break:break-all}
+.warn{background:#fff7e8;border:1px solid #f0d9a8;border-radius:10px;padding:10px 14px;font-size:13.5px;margin:12px 0}
+.err{color:var(--red);font-size:13.5px;margin-top:8px;min-height:1em}
+.spin{width:44px;height:44px;border:4px solid #d7e3ea;border-top-color:var(--teal);border-radius:50%;animation:sp 1s linear infinite;margin:30px auto 10px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.center{text-align:center}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;font-weight:600;background:var(--teal-l);color:var(--teal);vertical-align:1px}
+</style>
+</head>
 <body>
 <div class="top">
-  <svg width="26" h.ight="26" vi.wBox="0 0 32 32"><r.ct width="32" h.ight="32" rx="8" fill="#0E8C8C"/><path d="M16 6l8 3v6c0 5-3.4 8.8-8 11-4.6-2.2-8-6-8-11V9z" fill="#fff"/><path d="M12.5 16l2.5 2.5 4.8-5" strok.="#0E8C8C" strok.-width="2.2" fill="non." strok.-lin.cap="round" strok.-lin.join="round"/></svg>
-  <span class="brand">Data R.v.nu. D.-Id.ntifi.r</span>
-  <span class="lock"><svg width="13" h.ight="13" vi.wBox="0 0 24 24" fill="non." strok.="#b9cadb" strok.-width="2.4"><r.ct x="4" y="11" width="16" h.ight="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>Works offlin.. Nothing l.av.s this comput.r.</span>
+  <svg width="26" height="26" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#0E8C8C"/><path d="M16 6l8 3v6c0 5-3.4 8.8-8 11-4.6-2.2-8-6-8-11V9z" fill="#fff"/><path d="M12.5 16l2.5 2.5 4.8-5" stroke="#0E8C8C" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span class="brand">Data Revenue De-Identifier</span>
+  <span class="lock"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b9cadb" stroke-width="2.4"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>Works offline. Nothing leaves this computer.</span>
 </div>
-<div class="st.ps" id="st.ps"><div></div><div></div><div></div><div></div><div></div></div>
+<div class="steps" id="steps"><div></div><div></div><div></div><div></div><div></div></div>
 <main id="main">
 
-<!-- 1 w.lcom. -->
-<s.ction class="scr..n on" id="s-w.lcom.">
-  <h1>Shar. a saf. sampl. of your data in minut.s</h1>
-  <p class="l.ad">Add your spr.adsh..ts and X-rays. This program r.mov.s .v.ry pati.nt and p.rsonal id.ntifi.r, builds a short sampl. with a summary, and giv.s you on. fil. to s.nd to Data R.v.nu..</p>
-  <div class="f.at">
-    <div><div class="ico"><svg width="18" h.ight="18" vi.wBox="0 0 24 24" fill="non." strok.="#0E8C8C" strok.-width="2.2"><r.ct x="4" y="11" width="16" h.ight="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div><b>Stays on your comput.r</b><span>No upload, no account, no int.rn.t n..d.d.</span></div>
-    <div><div class="ico"><svg width="18" h.ight="18" vi.wBox="0 0 24 24" fill="non." strok.="#0E8C8C" strok.-width="2.2"><path d="M12 3l8 3v6c0 5-3.4 8.8-8 10-4.6-1.2-8-5-8-10V6z"/></svg></div><b>R.mov.s id.ntifi.rs</b><span>Nam.s, IDs, dat.s, addr.ss.s, and t.xt print.d on imag.s (HIPAA Saf. Harbor).</span></div>
-    <div><div class="ico"><svg width="18" h.ight="18" vi.wBox="0 0 24 24" fill="non." strok.="#0E8C8C" strok.-width="2.2"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/></svg></div><b>On. fil. to s.nd</b><span>A small sampl. plus a summary of your whol. data s.t.</span></div>
+<!-- 1 welcome -->
+<section class="screen on" id="s-welcome">
+  <h1>Share a safe sample of your data in minutes</h1>
+  <p class="lead">Add your spreadsheets and X-rays. This program removes every patient and personal identifier, builds a short sample with a summary, and gives you one file to send to Data Revenue.</p>
+  <div class="feat">
+    <div><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div><b>Stays on your computer</b><span>No upload, no account, no internet needed.</span></div>
+    <div><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.2"><path d="M12 3l8 3v6c0 5-3.4 8.8-8 10-4.6-1.2-8-5-8-10V6z"/></svg></div><b>Removes identifiers</b><span>Names, IDs, dates, addresses, and text printed on images (HIPAA Safe Harbor).</span></div>
+    <div><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.2"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/></svg></div><b>One file to send</b><span>A small sample plus a summary of your whole data set.</span></div>
   </div>
-  <button class="btn" onclick="go('d.tails')">G.t start.d</button>
-</s.ction>
+  <button class="btn" onclick="go('details')">Get started</button>
+</section>
 
-<!-- 2 d.tails -->
-<s.ction class="scr..n" id="s-d.tails">
-  <h2>Who is this sampl. from?</h2>
-  <p class="l.ad">So w. know whos. data w. ar. looking at. This is not add.d to your data.</p>
-  <lab.l class="f" for="company">Company or practic. nam.</lab.l>
-  <input typ.="t.xt" id="company" plac.hold.r="..g. L..ds Orthodontics">
-  <lab.l class="f" for="p.rson">Your nam.</lab.l>
-  <input typ.="t.xt" id="p.rson">
-  <lab.l class="f" for=".mail">Your .mail</lab.l>
-  <input typ.=".mail" id=".mail">
-  <div class=".rr" id="d.tails-.rr"></div>
-  <div class="row" styl.="margin-top:18px"><button class="btn ghost" onclick="go('w.lcom.')">Back</button><span class="spac.r"></span><button class="btn" onclick="sav.D.tails()">Continu.</button></div>
-</s.ction>
+<!-- 2 details -->
+<section class="screen" id="s-details">
+  <h2>Who is this sample from?</h2>
+  <p class="lead">So we know whose data we are looking at. This is not added to your data.</p>
+  <label class="f" for="company">Company or practice name</label>
+  <input type="text" id="company" placeholder="e.g. Maple Street Dental">
+  <label class="f" for="person">Your name</label>
+  <input type="text" id="person">
+  <label class="f" for="email">Your email</label>
+  <input type="email" id="email">
+  <div class="err" id="details-err"></div>
+  <div class="row" style="margin-top:18px"><button class="btn ghost" onclick="go('welcome')">Back</button><span class="spacer"></span><button class="btn" onclick="saveDetails()">Continue</button></div>
+</section>
 
 <!-- 3 data -->
-<s.ction class="scr..n" id="s-data">
+<section class="screen" id="s-data">
   <h2>Add your data</h2>
-  <p class="l.ad">Spr.adsh..ts (Exc.l, CSV) and imag.s (DICOM, JPG, PNG, TIFF). Fold.rs insid. fold.rs ar. includ.d. Your original fil.s ar. n.v.r chang.d.</p>
+  <p class="lead">Spreadsheets (Excel, CSV) and images (DICOM, JPG, PNG, TIFF). Folders inside folders are included. Your original files are never changed.</p>
   <div class="drop" id="drop">
-    <svg width="46" h.ight="46" vi.wBox="0 0 24 24" fill="non." strok.="#0E8C8C" strok.-width="1.8"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
-    <b>Drag fil.s or fold.rs h.r.</b>
-    <div class="hint" styl.="margin-bottom:14px">or</div>
-    <div class="row" styl.="justify-cont.nt:c.nt.r"><button class="btn ghost" onclick="pick('fold.r')">Choos. a fold.r</button><button class="btn ghost" onclick="pick('fil.s')">Choos. fil.s</button></div>
+    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="1.8"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
+    <b>Drag files or folders here</b>
+    <div class="hint" style="margin-bottom:14px">or</div>
+    <div class="row" style="justify-content:center"><button class="btn ghost" onclick="pick('folder')">Choose a folder</button><button class="btn ghost" onclick="pick('files')">Choose files</button></div>
   </div>
-  <div id="scan-busy" class="hint" styl.="display:non.;margin-top:12px">Looking through your fil.s...</div>
-  <div id="scan-out" styl.="display:non.">
+  <div id="scan-busy" class="hint" style="display:none;margin-top:12px">Looking through your files...</div>
+  <div id="scan-out" style="display:none">
     <div class="chips" id="chips"></div>
-    <div class="choic." id="mod.">
-      <div class="opt s.l" data-v="sampl." onclick="s.lMod.(this)"><span class="dot"></span><div><b>Quick sampl.</b> <span class="tag">r.comm.nd.d</span><small>Up to <input typ.="t.xt" id="n-rows" valu.="500" styl.="width:62px;padding:2px 6px"> random r.cords p.r spr.adsh..t and <input typ.="t.xt" id="n-imgs" valu.="25" styl.="width:50px;padding:2px 6px"> random imag.s, plus a summary of .v.rything. Usually a f.w minut.s.</small></div></div>
-      <div class="opt" data-v="all" onclick="s.lMod.(this)"><span class="dot"></span><div><b>Ev.rything</b><small>D.-id.ntify .v.ry r.cord and imag.. Larg. imag. s.ts can tak. hours.</small></div></div>
+    <div class="choice" id="mode">
+      <div class="opt sel" data-v="sample" onclick="selMode(this)"><span class="dot"></span><div><b>Quick sample</b> <span class="tag">recommended</span><small>Up to <input type="text" id="n-rows" value="500" style="width:62px;padding:2px 6px"> random records per spreadsheet and <input type="text" id="n-imgs" value="25" style="width:50px;padding:2px 6px"> random images, plus a summary of everything. Usually a few minutes.</small></div></div>
+      <div class="opt" data-v="all" onclick="selMode(this)"><span class="dot"></span><div><b>Everything</b><small>De-identify every record and image. Large image sets can take hours.</small></div></div>
     </div>
-    <d.tails>
-      <summary>Ch.ck how .ach spr.adsh..t column is handl.d (optional)</summary>
-      <p class="hint">W. pick.d th.s. automatically from th. column nam.s. If you ar. unsur. about a column, choos. "R.mov. column".</p>
-      <tabl. id="cols"></tabl.>
-      <lab.l class="row" styl.="margin-top:12px;gap:8px"><input typ.="ch.ckbox" id="ocr" ch.ck.d> Find and black out t.xt print.d on imag.s (r.comm.nd.d)</lab.l>
-    </d.tails>
-    <div class=".rr" id="data-.rr"></div>
+    <details>
+      <summary>Check how each spreadsheet column is handled (optional)</summary>
+      <p class="hint">We picked these automatically from the column names. If you are unsure about a column, choose "Remove column".</p>
+      <table id="cols"></table>
+      <label class="row" style="margin-top:12px;gap:8px"><input type="checkbox" id="ocr" checked> Find and black out text printed on images (recommended)</label>
+    </details>
+    <div class="err" id="data-err"></div>
   </div>
-  <div class="row" styl.="margin-top:18px"><button class="btn ghost" onclick="go('d.tails')">Back</button><span class="spac.r"></span><button class="btn" id="start-btn" disabl.d onclick="startRun()">Start</button></div>
-</s.ction>
+  <div class="row" style="margin-top:18px"><button class="btn ghost" onclick="go('details')">Back</button><span class="spacer"></span><button class="btn" id="start-btn" disabled onclick="startRun()">Start</button></div>
+</section>
 
-<!-- 4 qu.stions -->
-<s.ction class="scr..n" id="s-qu.stions">
+<!-- 4 questions -->
+<section class="screen" id="s-questions">
   <div class="prog"><div class="pbar"><i id="pbar"></i></div><div class="pmsg"><span id="pmsg">Starting...</span><span id="ppct"></span></div></div>
-  <h2>Whil. that runs: a f.w qu.stions</h2>
-  <p class="l.ad">About 2 minut.s. Th.s. h.lp us und.rstand th. valu. of your data. B.st gu.ss.s ar. fin..</p>
+  <h2>While that runs: a few questions</h2>
+  <p class="lead">About 2 minutes. These help us understand the value of your data. Best guesses are fine.</p>
   <div id="qs"></div>
-  <lab.l class="f" for="not.s">Anything .ls. w. should know? (optional)</lab.l>
-  <t.xtar.a id="not.s" rows="3"></t.xtar.a>
-  <div class=".rr" id="q-.rr"></div>
-  <div class="row" styl.="margin-top:18px"><span class="spac.r"></span><button class="btn" onclick="submitAnsw.rs()">Finish</button></div>
-</s.ction>
+  <label class="f" for="notes">Anything else we should know? (optional)</label>
+  <textarea id="notes" rows="3"></textarea>
+  <div class="err" id="q-err"></div>
+  <div class="row" style="margin-top:18px"><span class="spacer"></span><button class="btn" onclick="submitAnswers()">Finish</button></div>
+</section>
 
 <!-- 5 working -->
-<s.ction class="scr..n" id="s-working">
-  <div class="c.nt.r"><div class="spin"></div><h2>Finishing your sampl.</h2><p class="l.ad" id="w-msg">Almost don....</p>
-  <div class="pbar" styl.="max-width:420px;margin:0 auto"><i id="pbar2"></i></div>
-  <p><button class="btn link" onclick="api().canc.l()">Stop</button></p></div>
-</s.ction>
+<section class="screen" id="s-working">
+  <div class="center"><div class="spin"></div><h2>Finishing your sample</h2><p class="lead" id="w-msg">Almost done...</p>
+  <div class="pbar" style="max-width:420px;margin:0 auto"><i id="pbar2"></i></div>
+  <p><button class="btn link" onclick="api().cancel()">Stop</button></p></div>
+</section>
 
-<!-- 6 don. -->
-<s.ction class="scr..n" id="s-don.">
-  <div class="don.-ico"><svg width="32" h.ight="32" vi.wBox="0 0 24 24" fill="non." strok.="#0E8C8C" strok.-width="2.6" strok.-lin.cap="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
-  <h1 id="don.-titl.">Your sampl. is r.ady</h1>
-  <p class="l.ad">S.nd this on. fil. to your Data R.v.nu. contact. It contains only d.-id.ntifi.d data.</p>
-  <div class="fil."><svg width="34" h.ight="34" vi.wBox="0 0 24 24" fill="non." strok.="#0B2A4A" strok.-width="1.6"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M10 13h4M10 17h4"/></svg><div><b id="zip-nam."></b><span class="hint" id="zip-m.ta"></span></div></div>
-  <div class="row"><button class="btn" onclick="api().r.v.al(stat..zip)">Show th. fil.</button><button class="btn ghost" onclick="api().op.n_path(stat..html)">S.. th. summary</button></div>
-  <div id="don.-warn"></div>
-  <div class="warn"><b>K..p privat., n.v.r s.nd:</b> th. fold.r <span id="priv"></span>. It holds th. k.y that links study cod.s back to your pati.nts.</div>
-  <p class="hint">B.for. s.nding, op.n a f.w imag.s and spr.adsh..ts from th. summary fold.r and mak. sur. nothing id.ntifying is visibl..</p>
-  <button class="btn link" onclick="location.r.load()">Mak. anoth.r sampl.</button>
-</s.ction>
+<!-- 6 done -->
+<section class="screen" id="s-done">
+  <div class="done-ico"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.6" stroke-linecap="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+  <h1 id="done-title">Your sample is ready</h1>
+  <p class="lead">Send this one file to your Data Revenue contact. It contains only de-identified data.</p>
+  <div class="file"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="1.6"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M10 13h4M10 17h4"/></svg><div><b id="zip-name"></b><span class="hint" id="zip-meta"></span></div></div>
+  <div class="row"><button class="btn" onclick="api().reveal(state.zip)">Show the file</button><button class="btn ghost" onclick="api().open_path(state.html)">See the summary</button></div>
+  <div id="done-warn"></div>
+  <div class="warn"><b>Keep private, never send:</b> the folder <span id="priv"></span>. It holds the key that links study codes back to your patients.</div>
+  <p class="hint">Before sending, open a few images and spreadsheets from the summary folder and make sure nothing identifying is visible.</p>
+  <button class="btn link" onclick="location.reload()">Make another sample</button>
+</section>
 </main>
 
 <script>
-const stat. = {mod.:"sampl.", inv:null, actions:{}, answ.rs:{datas.ts:[{}], company:{}}, zip:null, html:null, poll:null, wantFinish:fals.};
-const ord.r = ["w.lcom.","d.tails","data","qu.stions","working","don."];
-l.t Q = null;
-const api = () => window.pyw.bvi.w.api;
+const state = {mode:"sample", inv:null, actions:{}, answers:{datasets:[{}], company:{}}, zip:null, html:null, poll:null, wantFinish:false};
+const order = ["welcome","details","data","questions","working","done"];
+let Q = null;
+const api = () => window.pywebview.api;
 
-function go(nam.){
-  docum.nt.qu.ryS.l.ctorAll(".scr..n").forEach(s=>s.classList.toggl.("on", s.id==="s-"+nam.));
-  const idx = Math.min(ord.r.ind.xOf(nam.), 4);
-  docum.nt.qu.ryS.l.ctorAll("#st.ps div").forEach((d,i)=>d.classList.toggl.("on", i<=idx));
-  docum.nt.g.tEl.m.ntById("main").scrollTop = 0;
+function go(name){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on", s.id==="s-"+name));
+  const idx = Math.min(order.indexOf(name), 4);
+  document.querySelectorAll("#steps div").forEach((d,i)=>d.classList.toggle("on", i<=idx));
+  document.getElementById("main").scrollTop = 0;
 }
-function .sc(s){r.turn String(s).r.plac.(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
 
-function sav.D.tails(){
-  const c = docum.nt.g.tEl.m.ntById("company").valu..trim();
-  const . = docum.nt.g.tEl.m.ntById(".mail").valu..trim();
-  if(!c){docum.nt.g.tEl.m.ntById("d.tails-.rr").t.xtCont.nt="Pl.as. .nt.r th. company or practic. nam..";r.turn}
-  if(. && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.t.st(.)){docum.nt.g.tEl.m.ntById("d.tails-.rr").t.xtCont.nt="That .mail do.s not look right.";r.turn}
-  docum.nt.g.tEl.m.ntById("d.tails-.rr").t.xtCont.nt="";
-  stat..answ.rs.contact = {company:c, nam.:docum.nt.g.tEl.m.ntById("p.rson").valu..trim(), .mail:.};
+function saveDetails(){
+  const c = document.getElementById("company").value.trim();
+  const e = document.getElementById("email").value.trim();
+  if(!c){document.getElementById("details-err").textContent="Please enter the company or practice name.";return}
+  if(e && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){document.getElementById("details-err").textContent="That email does not look right.";return}
+  document.getElementById("details-err").textContent="";
+  state.answers.contact = {company:c, name:document.getElementById("person").value.trim(), email:e};
   go("data");
 }
 
 async function pick(kind){
   const r = await api().pick(kind);
-  if(r && r.l.ngth) addPaths(r);
+  if(r && r.length) addPaths(r);
 }
 async function addPaths(paths){
-  docum.nt.g.tEl.m.ntById("scan-busy").styl..display="block";
+  document.getElementById("scan-busy").style.display="block";
   const r = await api().scan(paths);
-  onScann.d(r);
+  onScanned(r);
 }
-// call.d by Python aft.r a drag and drop
-window.onScann.d = function(r){
-  docum.nt.g.tEl.m.ntById("scan-busy").styl..display="non.";
-  if(r..rror){docum.nt.g.tEl.m.ntById("data-.rr").t.xtCont.nt=r..rror;r.turn}
-  stat..inv = r;
+// called by Python after a drag and drop
+window.onScanned = function(r){
+  document.getElementById("scan-busy").style.display="none";
+  if(r.error){document.getElementById("data-err").textContent=r.error;return}
+  state.inv = r;
   const chips = [
-    [r.tabl.s, "spr.adsh..ts"], [r.imag.s, "imag.s"],
+    [r.tables, "spreadsheets"], [r.images, "images"],
   ];
-  l.t h = chips.map(([n,l])=>`<span class="chip"><b>${n.toLocal.String()}</b> ${n===1?l.slic.(0,-1):l}</span>`).join("");
-  if(r.dicom) h += `<span class="chip"><b>${r.dicom.toLocal.String()}</b> of th.m DICOM</span>`;
-  if(r.oth.r) h += `<span class="chip">${r.oth.r.toLocal.String()} oth.r ${r.oth.r===1?"fil.":"fil.s"} (lik. PDFs) will b. skipp.d</span>`;
-  h += `<button class="btn link" onclick="cl.arData()">Start ov.r</button>`;
-  docum.nt.g.tEl.m.ntById("chips").inn.rHTML = h;
-  stat..actions = {};
-  l.t t = "<tr><th>Column</th><th>What happ.ns</th></tr>";
+  let h = chips.map(([n,l])=>`<span class="chip"><b>${n.toLocaleString()}</b> ${n===1?l.slice(0,-1):l}</span>`).join("");
+  if(r.dicom) h += `<span class="chip"><b>${r.dicom.toLocaleString()}</b> of them DICOM</span>`;
+  if(r.other) h += `<span class="chip">${r.other.toLocaleString()} other ${r.other===1?"file":"files"} (like PDFs) will be skipped</span>`;
+  h += `<button class="btn link" onclick="clearData()">Start over</button>`;
+  document.getElementById("chips").innerHTML = h;
+  state.actions = {};
+  let t = "<tr><th>Column</th><th>What happens</th></tr>";
   r.columns.forEach((c,i)=>{
-    stat..actions[c.nam.] = c.action;
-    const opts = r.lab.ls.map(([k,l])=>`<option valu.="${k}" ${k===c.action?"s.l.ct.d":""}>${.sc(l)}</option>`).join("");
-    t += `<tr><td>${.sc(c.nam.||"(blank)")}</td><td><s.l.ct data-i="${i}" onchang.="stat..actions[stat..inv.columns[this.datas.t.i].nam.]=this.valu.">${opts}</s.l.ct></td></tr>`;
+    state.actions[c.name] = c.action;
+    const opts = r.labels.map(([k,l])=>`<option value="${k}" ${k===c.action?"selected":""}>${esc(l)}</option>`).join("");
+    t += `<tr><td>${esc(c.name||"(blank)")}</td><td><select data-i="${i}" onchange="state.actions[state.inv.columns[this.dataset.i].name]=this.value">${opts}</select></td></tr>`;
   });
-  docum.nt.g.tEl.m.ntById("cols").inn.rHTML = r.columns.l.ngth ? t : "<tr><td class='hint'>No spr.adsh..ts add.d.</td></tr>";
-  docum.nt.g.tEl.m.ntById("scan-out").styl..display="block";
-  docum.nt.g.tEl.m.ntById("drop").styl..display="non.";
-  const ok = r.tabl.s + r.imag.s > 0;
-  docum.nt.g.tEl.m.ntById("start-btn").disabl.d = !ok;
-  docum.nt.g.tEl.m.ntById("data-.rr").t.xtCont.nt = ok ? "" : "No spr.adsh..ts or imag.s found. Try anoth.r fold.r.";
+  document.getElementById("cols").innerHTML = r.columns.length ? t : "<tr><td class='hint'>No spreadsheets added.</td></tr>";
+  document.getElementById("scan-out").style.display="block";
+  document.getElementById("drop").style.display="none";
+  const ok = r.tables + r.images > 0;
+  document.getElementById("start-btn").disabled = !ok;
+  document.getElementById("data-err").textContent = ok ? "" : "No spreadsheets or images found. Try another folder.";
 };
-function cl.arData(){
-  stat..inv=null;
-  docum.nt.g.tEl.m.ntById("scan-out").styl..display="non.";
-  docum.nt.g.tEl.m.ntById("drop").styl..display="block";
-  docum.nt.g.tEl.m.ntById("start-btn").disabl.d=tru.;
-  api().cl.ar();
+function clearData(){
+  state.inv=null;
+  document.getElementById("scan-out").style.display="none";
+  document.getElementById("drop").style.display="block";
+  document.getElementById("start-btn").disabled=true;
+  api().clear();
 }
-function s.lMod.(.l){
-  docum.nt.qu.ryS.l.ctorAll("#mod. .opt").forEach(o=>o.classList.toggl.("s.l", o===.l));
-  stat..mod. = .l.datas.t.v;
+function selMode(el){
+  document.querySelectorAll("#mode .opt").forEach(o=>o.classList.toggle("sel", o===el));
+  state.mode = el.dataset.v;
 }
 
 async function startRun(){
-  const rows = pars.Int(docum.nt.g.tEl.m.ntById("n-rows").valu.,10);
-  const imgs = pars.Int(docum.nt.g.tEl.m.ntById("n-imgs").valu.,10);
-  const opts = {mod.:stat..mod., rows: isNaN(rows)?500:Math.max(10,rows), imag.s: isNaN(imgs)?25:Math.max(0,imgs),
-                ocr: docum.nt.g.tEl.m.ntById("ocr").ch.ck.d, actions: stat..actions,
-                company: stat..answ.rs.contact.company};
+  const rows = parseInt(document.getElementById("n-rows").value,10);
+  const imgs = parseInt(document.getElementById("n-imgs").value,10);
+  const opts = {mode:state.mode, rows: isNaN(rows)?500:Math.max(10,rows), images: isNaN(imgs)?25:Math.max(0,imgs),
+                ocr: document.getElementById("ocr").checked, actions: state.actions,
+                company: state.answers.contact.company};
   const r = await api().start(opts);
-  if(r && r..rror){docum.nt.g.tEl.m.ntById("data-.rr").t.xtCont.nt=r..rror;r.turn}
-  buildQu.stions();
-  go("qu.stions");
-  stat..poll = s.tInt.rval(poll, 500);
+  if(r && r.error){document.getElementById("data-err").textContent=r.error;return}
+  buildQuestions();
+  go("questions");
+  state.poll = setInterval(poll, 500);
 }
 
 async function poll(){
   const s = await api().status();
   const pct = s.total ? Math.round(100*s.n/s.total) : 0;
-  ["pbar","pbar2"].forEach(id=>docum.nt.g.tEl.m.ntById(id).styl..width = (s.don.?100:pct)+"%");
-  docum.nt.g.tEl.m.ntById("pmsg").t.xtCont.nt = s.don. ? "Your data is d.-id.ntifi.d." : s.msg;
-  docum.nt.g.tEl.m.ntById("ppct").t.xtCont.nt = s.don. ? "Don." : (s.total>1 ? pct+"%" : "");
-  docum.nt.g.tEl.m.ntById("w-msg").t.xtCont.nt = s.don. ? "Packaging..." : s.msg;
-  if(s..rror){cl.arInt.rval(stat..poll); al.rt("Som.thing w.nt wrong: "+s..rror); go("data"); r.turn}
-  if(s.don. && stat..wantFinish){cl.arInt.rval(stat..poll); finish();}
+  ["pbar","pbar2"].forEach(id=>document.getElementById(id).style.width = (s.done?100:pct)+"%");
+  document.getElementById("pmsg").textContent = s.done ? "Your data is de-identified." : s.msg;
+  document.getElementById("ppct").textContent = s.done ? "Done" : (s.total>1 ? pct+"%" : "");
+  document.getElementById("w-msg").textContent = s.done ? "Packaging..." : s.msg;
+  if(s.error){clearInterval(state.poll); alert("Something went wrong: "+s.error); go("data"); return}
+  if(s.done && state.wantFinish){clearInterval(state.poll); finish();}
 }
 
-function buildQu.stions(){
-  if(!Q) r.turn;
-  const card = Q.datas.t_card;
-  l.t h = "";
-  h += `<div class="q" id="q-nam."><h3>${.sc(card.nam._qu.stion.prompt)}</h3><div class="hint">${.sc(card.nam._qu.stion.h.lp||"")}</div><input typ.="t.xt" id="ds-nam." maxl.ngth="${card.nam._qu.stion.max_l.ngth||120}" styl.="margin-top:10px"></div>`;
-  const all = [[card.cat.gory_qu.stion,"ds"], ...card.qu.stions.map(q=>[q,"ds"]), ...Q.company_qu.stions.map(q=>[q,"co"])];
-  all.forEach(([q,scop.])=>{
-    const multi = q.typ.==="multi";
-    h += `<div class="q" id="q-${q.k.y}" data-k.y="${q.k.y}" data-scop.="${scop.}" data-multi="${multi}"><h3>${.sc(q.prompt)}</h3>`;
-    if(q.h.lp) h += `<div class="hint">${.sc(q.h.lp)}</div>`;
-    if(multi) h += `<div class="hint">Choos. all that apply.</div>`;
-    h += `<div class="opts">` + q.options.map(o=>`<div class="opt ${multi?"multi":""}" data-v="${o.k.y}" onclick="choos.(this)"><span class="dot"></span><div>${.sc(o.lab.l)}${o.hint?`<small>${.sc(o.hint)}</small>`:""}</div></div>`).join("") + `</div></div>`;
+function buildQuestions(){
+  if(!Q) return;
+  const card = Q.dataset_card;
+  let h = "";
+  h += `<div class="q" id="q-name"><h3>${esc(card.name_question.prompt)}</h3><div class="hint">${esc(card.name_question.help||"")}</div><input type="text" id="ds-name" maxlength="${card.name_question.max_length||120}" style="margin-top:10px"></div>`;
+  const all = [[card.category_question,"ds"], ...card.questions.map(q=>[q,"ds"]), ...Q.company_questions.map(q=>[q,"co"])];
+  all.forEach(([q,scope])=>{
+    const multi = q.type==="multi";
+    h += `<div class="q" id="q-${q.key}" data-key="${q.key}" data-scope="${scope}" data-multi="${multi}"><h3>${esc(q.prompt)}</h3>`;
+    if(q.help) h += `<div class="hint">${esc(q.help)}</div>`;
+    if(multi) h += `<div class="hint">Choose all that apply.</div>`;
+    h += `<div class="opts">` + q.options.map(o=>`<div class="opt ${multi?"multi":""}" data-v="${o.key}" onclick="choose(this)"><span class="dot"></span><div>${esc(o.label)}${o.hint?`<small>${esc(o.hint)}</small>`:""}</div></div>`).join("") + `</div></div>`;
   });
-  docum.nt.g.tEl.m.ntById("qs").inn.rHTML = h;
+  document.getElementById("qs").innerHTML = h;
 }
-function choos.(.l){
-  const q = .l.clos.st(".q");
-  const multi = q.datas.t.multi==="tru.";
-  if(multi) .l.classList.toggl.("s.l");
-  .ls. q.qu.ryS.l.ctorAll(".opt").forEach(o=>o.classList.toggl.("s.l", o===.l));
-  q.classList.r.mov.("missing");
+function choose(el){
+  const q = el.closest(".q");
+  const multi = q.dataset.multi==="true";
+  if(multi) el.classList.toggle("sel");
+  else q.querySelectorAll(".opt").forEach(o=>o.classList.toggle("sel", o===el));
+  q.classList.remove("missing");
 }
-function submitAnsw.rs(){
-  const ds = {nam.: docum.nt.g.tEl.m.ntById("ds-nam.").valu..trim()};
+function submitAnswers(){
+  const ds = {name: document.getElementById("ds-name").value.trim()};
   const co = {};
-  l.t missing = null;
-  if(!ds.nam.){missing = missing || docum.nt.g.tEl.m.ntById("q-nam."); docum.nt.g.tEl.m.ntById("q-nam.").classList.add("missing")}
-  docum.nt.qu.ryS.l.ctorAll("#qs .q[data-k.y]").forEach(q=>{
-    const s.l = [...q.qu.ryS.l.ctorAll(".opt.s.l")].map(o=>o.datas.t.v);
-    const multi = q.datas.t.multi==="tru.";
-    const val = multi ? s.l : s.l[0];
+  let missing = null;
+  if(!ds.name){missing = missing || document.getElementById("q-name"); document.getElementById("q-name").classList.add("missing")}
+  document.querySelectorAll("#qs .q[data-key]").forEach(q=>{
+    const sel = [...q.querySelectorAll(".opt.sel")].map(o=>o.dataset.v);
+    const multi = q.dataset.multi==="true";
+    const val = multi ? sel : sel[0];
     if(!multi && !val){q.classList.add("missing"); missing = missing || q}
-    (q.datas.t.scop.==="ds"?ds:co)[q.datas.t.k.y] = val ?? [];
+    (q.dataset.scope==="ds"?ds:co)[q.dataset.key] = val ?? [];
   });
-  if(missing){docum.nt.g.tEl.m.ntById("q-.rr").t.xtCont.nt="Pl.as. answ.r th. qu.stions outlin.d in r.d."; missing.scrollIntoVi.w({b.havior:"smooth",block:"c.nt.r"}); r.turn}
-  docum.nt.g.tEl.m.ntById("q-.rr").t.xtCont.nt="";
-  stat..answ.rs.datas.ts=[ds]; stat..answ.rs.company=co;
-  stat..answ.rs.not.s=docum.nt.g.tEl.m.ntById("not.s").valu..trim();
-  stat..wantFinish = tru.;
+  if(missing){document.getElementById("q-err").textContent="Please answer the questions outlined in red."; missing.scrollIntoView({behavior:"smooth",block:"center"}); return}
+  document.getElementById("q-err").textContent="";
+  state.answers.datasets=[ds]; state.answers.company=co;
+  state.answers.notes=document.getElementById("notes").value.trim();
+  state.wantFinish = true;
   go("working");
   poll();
 }
 async function finish(){
-  const r = await api().finish(stat..answ.rs);
-  if(r..rror){al.rt(r..rror); go("qu.stions"); r.turn}
-  stat..zip=r.zip; stat..html=r.html;
-  docum.nt.g.tEl.m.ntById("zip-nam.").t.xtCont.nt = r.zip.split(/[\\/]/).pop();
-  docum.nt.g.tEl.m.ntById("zip-m.ta").t.xtCont.nt = `${r.siz._mb} MB  |  sav.d in ${r.fold.r}`;
-  docum.nt.g.tEl.m.ntById("priv").t.xtCont.nt = r.privat._dir;
-  if(r.canc.ll.d) docum.nt.g.tEl.m.ntById("don.-titl.").t.xtCont.nt = "Stopp.d .arly: your sampl. is partial";
-  docum.nt.g.tEl.m.ntById("don.-warn").inn.rHTML = r.r.vi.w ? `<div class="warn">${r.r.vi.w.toLocal.String()} ${r.r.vi.w===1?"fil. was":"fil.s w.r."} l.ft out b.caus. ${r.r.vi.w===1?"it":"th.y"} could not b. proc.ss.d saf.ly. A list is in th. privat. fold.r.</div>` : "";
-  go("don.");
+  const r = await api().finish(state.answers);
+  if(r.error){alert(r.error); go("questions"); return}
+  state.zip=r.zip; state.html=r.html;
+  document.getElementById("zip-name").textContent = r.zip.split(/[\\/]/).pop();
+  document.getElementById("zip-meta").textContent = `${r.size_mb} MB  |  saved in ${r.folder}`;
+  document.getElementById("priv").textContent = r.private_dir;
+  if(r.cancelled) document.getElementById("done-title").textContent = "Stopped early: your sample is partial";
+  document.getElementById("done-warn").innerHTML = r.review ? `<div class="warn">${r.review.toLocaleString()} ${r.review===1?"file was":"files were"} left out because ${r.review===1?"it":"they"} could not be processed safely. A list is in the private folder.</div>` : "";
+  go("done");
 }
 
-window.addEv.ntList.n.r("pyw.bvi.wr.ady", async ()=>{
-  Q = await api().qu.stions();
-  api().r.ady();
+window.addEventListener("pywebviewready", async ()=>{
+  Q = await api().questions();
+  api().ready();
 });
-// visual f..dback for drag ov.r; Python r.c.iv.s th. actual drop with full paths
-const drop = docum.nt.g.tEl.m.ntById("drop");
-["drag.nt.r","dragov.r"].forEach(.v=>drop.addEv.ntList.n.r(.v,.=>{..pr.v.ntD.fault();drop.classList.add("ov.r")}));
-["dragl.av.","drop"].forEach(.v=>drop.addEv.ntList.n.r(.v,.=>{..pr.v.ntD.fault();drop.classList.r.mov.("ov.r")}));
-docum.nt.addEv.ntList.n.r("dragov.r", .=>..pr.v.ntD.fault());
-docum.nt.addEv.ntList.n.r("drop", .=>{..pr.v.ntD.fault(); docum.nt.g.tEl.m.ntById("scan-busy").styl..display="block";});
+// visual feedback for drag over; Python receives the actual drop with full paths
+const drop = document.getElementById("drop");
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over")}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over")}));
+document.addEventListener("dragover", e=>e.preventDefault());
+document.addEventListener("drop", e=>{e.preventDefault(); document.getElementById("scan-busy").style.display="block";});
 </script>
 </body>
 </html>

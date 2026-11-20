@@ -162,6 +162,61 @@ def _strip_png(data: bytes) -> bytes | None:
     return bytes(out)
 
 
+# ── shared decode helpers (the same pixels go to text detection on every platform) ──
+def _dicom_img8(fr, spp: int, photometric: str):
+    if spp == 1:
+        img8 = _to_uint8(fr, invert=(photometric == "MONOCHROME1"))
+        fill = fr.max() if photometric == "MONOCHROME1" else fr.min()
+    else:
+        img8, fill = _to_uint8(fr), 0
+    return img8, fill
+
+
+def _plain_frame(fr):
+    mode = fr.mode
+    if mode in ("P", "PA", "LA", "CMYK", "YCbCr", "1"):
+        fr = fr.convert("RGB" if mode != "1" and mode != "LA" else "L")
+        mode = fr.mode
+    return fr, mode, np.array(fr)
+
+
+def _boxes(job: dict, frame_index: int, img8):
+    """Text boxes for one frame: precomputed ones (from the browser's detector, passed in
+    job["boxes"]) or found here with the bundled OCR model."""
+    pre = job.get("boxes")
+    if pre is not None:
+        fb = pre[frame_index] if frame_index < len(pre) else []
+        return [(int(b[0]), int(b[1]), int(b[2]), int(b[3]), "") for b in fb]
+    return find_text(img8)
+
+
+def ocr_inputs(job: dict) -> list:
+    """The 8-bit frames text detection should look at, for a detector that runs outside
+    Python (the browser). Returns [] when the image cannot be decoded; process() then
+    puts the file on the review list."""
+    try:
+        if job["kind"] == "dicom":
+            import pydicom
+
+            ds = pydicom.dcmread(job["src"], force=True)
+            photometric = str(getattr(ds, "PhotometricInterpretation", "MONOCHROME2")).upper()
+            arr = ds.pixel_array
+            frames = int(getattr(ds, "NumberOfFrames", 1) or 1)
+            spp = int(getattr(ds, "SamplesPerPixel", 1) or 1)
+            frame_list = [arr] if frames == 1 else [arr[i] for i in range(frames)]
+            return [_dicom_img8(fr, spp, photometric)[0] for fr in frame_list]
+        from PIL import Image, ImageSequence
+
+        im = Image.open(job["src"])
+        out = []
+        for fr in ImageSequence.Iterator(im):
+            _f, _m, arr = _plain_frame(fr.copy())
+            out.append(arr if arr.dtype == np.uint8 else _to_uint8(arr))
+        return out
+    except Exception:  # noqa: BLE001
+        return []
+
+
 # ── DICOM ───────────────────────────────────────────────────────────────────────
 _KEEP_TAGS = [
     "SOPClassUID", "Modality", "ImageType", "BodyPartExamined", "ViewPosition",
@@ -213,14 +268,9 @@ def _dicom(job: dict) -> dict:
     texts: list[str] = []
     if job["ocr"]:
         frame_list = [arr] if frames == 1 else [arr[i] for i in range(frames)]
-        for fr in frame_list:
-            if spp == 1:
-                img8 = _to_uint8(fr, invert=(photometric == "MONOCHROME1"))
-                fill = fr.max() if photometric == "MONOCHROME1" else fr.min()
-            else:
-                img8 = _to_uint8(fr)
-                fill = 0
-            boxes = find_text(img8)
+        for fi, fr in enumerate(frame_list):
+            img8, fill = _dicom_img8(fr, spp, photometric)
+            boxes = _boxes(job, fi, img8)
             _paint(fr, boxes, fill)
             found += len(boxes)
             texts += [b[4] for b in boxes]
@@ -300,15 +350,11 @@ def _plain(job: dict) -> dict:
     found = 0
     texts: list[str] = []
     new_frames = []
-    for fr in frames:
-        mode = fr.mode
-        if mode in ("P", "PA", "LA", "CMYK", "YCbCr", "1"):
-            fr = fr.convert("RGB" if mode != "1" and mode != "LA" else "L")
-            mode = fr.mode
-        arr = np.array(fr)
+    for fi, fr in enumerate(frames):
+        fr, mode, arr = _plain_frame(fr)
         if job["ocr"]:
             img8 = arr if arr.dtype == np.uint8 else _to_uint8(arr)
-            boxes = find_text(img8)
+            boxes = _boxes(job, fi, img8)
             if boxes:
                 arr = arr.copy()
                 _paint(arr, boxes, 0)

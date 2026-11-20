@@ -6,3 +6,5 @@ __pycache__/
 samples/
 *.spec
 .pytest_cache/
+web/dist/
+.claude/

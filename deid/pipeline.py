@@ -16,7 +16,6 @@ import random
 import re
 import threading
 from collections import Counter
-from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from dataclasses import dataclass, field
 
 from . import __version__, images, rules, tables
@@ -96,98 +95,181 @@ def _link_code(path: str, crosswalk: Crosswalk) -> str | None:
     return None
 
 
+class Run:
+    """One de-identification run, in steps, so any front end can drive it:
+
+        r = Run(...); r.tables(); chosen = r.choose_images(); jobs = r.image_jobs(chosen)
+        for job in jobs: r.take_image(images.process(job))
+        summary = r.finish()
+
+    The desktop app runs images in a process pool (run() below); the browser runs them
+    one at a time with its own text detector (deid/web.py)."""
+
+    def __init__(self, inv: Inventory, actions: dict, ocr: bool = True,
+                 share_dir: str | None = None, private_dir: str | None = None,
+                 output_dir: str | None = None, sample_rows: int | None = None,
+                 sample_images: int | None = None, seed: int | None = None,
+                 progress=None, cancel: threading.Event | None = None):
+        self.inv, self.actions, self.ocr = inv, actions, ocr
+        self.progress = progress or (lambda *_a, **_k: None)
+        self.cancel = cancel or threading.Event()
+        self.share = share_dir or os.path.join(output_dir, SHARE_DIR)
+        self.private = private_dir or os.path.join(output_dir, PRIVATE_DIR)
+        self.t_dir = os.path.join(self.share, "tables")
+        self.i_dir = os.path.join(self.share, "images")
+        for d in (self.share, self.private, self.t_dir, self.i_dir):
+            os.makedirs(d, exist_ok=True)
+        self.cw = Crosswalk(self.private)
+        self.started = _dt.datetime.now()
+        self.seed = seed if seed is not None else int(self.started.timestamp())
+        self.sample_rows, self.sample_images = sample_rows, sample_images
+        self.file_log: list = []  # (original, output, status, note)
+        self.review: list = []
+        self.table_results: list = []
+        self.jobs: list = []
+        self.img_stats = Counter()
+        self.img_info: list = []
+        self.text_log: list = []
+        self.done_images = 0
+
+    def tables(self) -> None:
+        self.progress("Reading spreadsheets", 0, 1)
+        names = tables.collect(self.inv.tables, self.actions, self.cw)
+        used: set[str] = set()
+        n_tables = len(self.inv.tables)
+        for n, p in enumerate(self.inv.tables, 1):
+            if self.cancel.is_set():
+                break
+            self.progress(f"Spreadsheet {n} of {n_tables}", n, max(n_tables, 1))
+            r = tables.write_one(p, self.t_dir, self.actions, self.cw, names, used,
+                                 sample_rows=self.sample_rows, seed=self.seed)
+            self.table_results.append(r)
+            if r.error:
+                self.review.append((p, f"spreadsheet could not be processed: {r.error}"))
+                self.file_log.append((p, "", "review", r.error))
+            else:
+                self.file_log.append((p, r.output, "ok", f"{r.rows} of {r.source_rows} rows"))
+        self.cw.save()
+
+    def choose_images(self) -> list:
+        chosen = list(self.inv.images)
+        if self.sample_images is not None and len(chosen) > self.sample_images:
+            chosen = random.Random(self.seed).sample(chosen, self.sample_images)
+            chosen.sort()
+        return chosen
+
+    def image_jobs(self, chosen: list) -> list:
+        for seq, (p, kind) in enumerate(chosen, 1):
+            code = None
+            if kind == "dicom":
+                pid = images.dicom_patient_id(p)
+                code = self.cw.code_for(pid) if pid else None
+            if not code:
+                code = _link_code(p, self.cw)
+            sub = os.path.join(self.i_dir, f"{(seq - 1) // 1000 + 1:04d}")
+            os.makedirs(sub, exist_ok=True)
+            stem = f"{code}_{seq:07d}" if code else f"IMG_{seq:07d}"
+            self.jobs.append({"src": p, "kind": kind, "code": code, "dst_dir": sub,
+                              "out_stem": stem, "secret": self.cw.secret, "ocr": self.ocr})
+        self.cw.save()
+        return self.jobs
+
+    def take_image(self, res: dict) -> None:
+        self.done_images += 1
+        if res["status"] == "ok":
+            self.img_stats["ok"] += 1
+            if res.get("info"):
+                self.img_info.append(res["info"])
+            if res.get("text_boxes"):
+                self.img_stats["with_text"] += 1
+                self.img_stats["text_boxes"] += res["text_boxes"]
+                self.text_log.append((res["src"], res["out"], res["text_boxes"],
+                                      " | ".join(t for t in res.get("texts", []) if t)[:500]))
+            if res.get("code"):
+                self.img_stats["linked"] += 1
+            self.file_log.append((res["src"], res["out"], "ok",
+                                  f"{res.get('text_boxes', 0)} text areas blacked out"))
+        else:
+            self.img_stats["review"] += 1
+            self.review.append((res["src"], res.get("reason", "")))
+            self.file_log.append((res["src"], "", "review", res.get("reason", "")))
+        self.progress(f"X-ray / image {self.done_images} of {len(self.jobs)}",
+                      self.done_images, len(self.jobs))
+
+    def finish(self) -> dict:
+        for p in self.inv.other:
+            self.review.append((p, "not a spreadsheet or image; not copied. "
+                                   "Review by hand if needed."))
+            self.file_log.append((p, "", "skipped", "unsupported file type"))
+
+        def _w(name, header, rows):
+            with open(os.path.join(self.private, name), "w", newline="",
+                      encoding="utf-8-sig") as f:
+                w = csv.writer(f)
+                w.writerow(header)
+                w.writerows(rows)
+
+        stamp = self.started.strftime("%Y%m%d_%H%M%S")
+        _w(f"file_log_{stamp}.csv", ["original_file", "output_file", "status", "note"],
+           self.file_log)
+        _w(f"needs_review_{stamp}.csv", ["original_file", "reason"], self.review)
+        _w(f"text_blacked_out_{stamp}.csv",
+           ["original_file", "output_file", "areas", "text_that_was_read"], self.text_log)
+
+        tr = self.table_results
+        summary = {
+            "cancelled": self.cancel.is_set(),
+            "sampling": self.sample_rows is not None or self.sample_images is not None,
+            "tables": len(tr),
+            "table_rows": sum(r.rows for r in tr),
+            "table_source_rows": sum(r.source_rows for r in tr),
+            "images_total": len(self.inv.images),
+            "images_selected": len(self.jobs),
+            "images_ok": self.img_stats["ok"],
+            "images_with_text": self.img_stats["with_text"],
+            "text_boxes": self.img_stats["text_boxes"],
+            "images_linked": self.img_stats["linked"],
+            "review": len(self.review),
+            "other_files": len(self.inv.other),
+            "patients_coded": len(self.cw),
+            "share_dir": self.share,
+            "private_dir": self.private,
+            "seconds": int((_dt.datetime.now() - self.started).total_seconds()),
+            "table_profiles": [
+                {"file": os.path.basename(r.output), "source_rows": r.source_rows,
+                 "sample_rows": r.rows, "sheets": r.profiles}
+                for r in tr if not r.error
+            ],
+            "image_profile": _image_profile(self.inv, self.img_info),
+        }
+        _report(os.path.join(self.share, "DEIDENTIFICATION_REPORT.txt"), summary, tr,
+                self.ocr, self.started)
+        return summary
+
+
 def run(inv: Inventory, output_dir: str | None, actions: dict, ocr: bool = True,
         workers: int | None = None, progress=None, cancel: threading.Event | None = None,
         sample_rows: int | None = None, sample_images: int | None = None,
         share_dir: str | None = None, private_dir: str | None = None,
         seed: int | None = None) -> dict:
-    progress = progress or (lambda *_a, **_k: None)
-    cancel = cancel or threading.Event()
-    share = share_dir or os.path.join(output_dir, SHARE_DIR)
-    private = private_dir or os.path.join(output_dir, PRIVATE_DIR)
-    t_dir, i_dir = os.path.join(share, "tables"), os.path.join(share, "images")
-    for d in (share, private, t_dir, i_dir):
-        os.makedirs(d, exist_ok=True)
-    cw = Crosswalk(private)
-    started = _dt.datetime.now()
-    seed = seed if seed is not None else int(started.timestamp())
-    sampling = sample_rows is not None or sample_images is not None
-    file_log = []  # (original, output, status, note)
-    review = []
-
-    # ── tables ──
-    progress("Reading spreadsheets", 0, 1)
-    names = tables.collect(inv.tables, actions, cw)
-    table_results = []
-    used: set[str] = set()
-    for n, p in enumerate(inv.tables, 1):
-        if cancel.is_set():
-            break
-        progress(f"Spreadsheet {n} of {len(inv.tables)}", n, max(len(inv.tables), 1))
-        r = tables.write_one(p, t_dir, actions, cw, names, used, sample_rows=sample_rows,
-                             seed=seed)
-        table_results.append(r)
-        if r.error:
-            review.append((p, f"spreadsheet could not be processed: {r.error}"))
-            file_log.append((p, "", "review", r.error))
-        else:
-            file_log.append((p, r.output, "ok", f"{r.rows} of {r.source_rows} rows"))
-    cw.save()
-
-    # ── images ──
-    chosen = list(inv.images)
-    if sample_images is not None and len(chosen) > sample_images:
-        chosen = random.Random(seed).sample(chosen, sample_images)
-        chosen.sort()
-    jobs = []
-    for seq, (p, kind) in enumerate(chosen, 1):
-        code = None
-        if kind == "dicom":
-            pid = images.dicom_patient_id(p)
-            code = cw.code_for(pid) if pid else None
-        if not code:
-            code = _link_code(p, cw)
-        sub = os.path.join(i_dir, f"{(seq - 1) // 1000 + 1:04d}")
-        os.makedirs(sub, exist_ok=True)
-        stem = f"{code}_{seq:07d}" if code else f"IMG_{seq:07d}"
-        jobs.append({"src": p, "kind": kind, "code": code, "dst_dir": sub, "out_stem": stem,
-                     "secret": cw.secret, "ocr": ocr})
-    cw.save()
-
-    img_stats = Counter()
-    img_info = []
-    text_log = []
-
-    def _take(res, done_n):
-        if res["status"] == "ok":
-            img_stats["ok"] += 1
-            if res.get("info"):
-                img_info.append(res["info"])
-            if res.get("text_boxes"):
-                img_stats["with_text"] += 1
-                img_stats["text_boxes"] += res["text_boxes"]
-                text_log.append((res["src"], res["out"], res["text_boxes"],
-                                 " | ".join(res.get("texts", []))[:500]))
-            if res.get("code"):
-                img_stats["linked"] += 1
-            file_log.append((res["src"], res["out"], "ok",
-                             f"{res.get('text_boxes', 0)} text areas blacked out"))
-        else:
-            img_stats["review"] += 1
-            review.append((res["src"], res.get("reason", "")))
-            file_log.append((res["src"], "", "review", res.get("reason", "")))
-        progress(f"X-ray / image {done_n} of {len(jobs)}", done_n, len(jobs))
-
+    r = Run(inv, actions, ocr=ocr, share_dir=share_dir, private_dir=private_dir,
+            output_dir=output_dir, sample_rows=sample_rows, sample_images=sample_images,
+            seed=seed, progress=progress, cancel=cancel)
+    r.tables()
+    jobs = r.image_jobs(r.choose_images())
+    cancel = r.cancel
     if jobs and not cancel.is_set():
         workers = workers or max(1, min(8, (os.cpu_count() or 2) // 2))
-        progress("Loading the text-detection model (a few seconds)", 0, len(jobs))
+        r.progress("Loading the text-detection model (a few seconds)", 0, len(jobs))
         if len(jobs) <= 6 or workers == 1:
-            for n, job in enumerate(jobs, 1):
+            for job in jobs:
                 if cancel.is_set():
                     break
-                _take(images.process(job), n)
+                r.take_image(images.process(job))
         else:
-            done_n = 0
+            # imported here: the browser build (Pyodide) has no process pools
+            from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
+
             with ProcessPoolExecutor(max_workers=workers) as ex:
                 pending = set()
                 it = iter(jobs)
@@ -202,60 +284,13 @@ def run(inv: Inventory, output_dir: str | None, actions: dict, ocr: bool = True,
                         break
                     finished, pending = wait(pending, return_when=FIRST_COMPLETED)
                     for fut in finished:
-                        done_n += 1
-                        _take(fut.result(), done_n)
+                        r.take_image(fut.result())
                     if cancel.is_set():
                         for f in pending:
                             f.cancel()
                         pending = {f for f in pending if not f.cancelled()}
                         exhausted = True
-
-    for p in inv.other:
-        review.append((p, "not a spreadsheet or image; not copied. Review by hand if needed."))
-        file_log.append((p, "", "skipped", "unsupported file type"))
-
-    # ── private logs ──
-    def _w(name, header, rows):
-        with open(os.path.join(private, name), "w", newline="", encoding="utf-8-sig") as f:
-            w = csv.writer(f)
-            w.writerow(header)
-            w.writerows(rows)
-
-    stamp = started.strftime("%Y%m%d_%H%M%S")
-    _w(f"file_log_{stamp}.csv", ["original_file", "output_file", "status", "note"], file_log)
-    _w(f"needs_review_{stamp}.csv", ["original_file", "reason"], review)
-    _w(f"text_blacked_out_{stamp}.csv",
-       ["original_file", "output_file", "areas", "text_that_was_read"], text_log)
-
-    summary = {
-        "cancelled": cancel.is_set(),
-        "sampling": sampling,
-        "tables": len(table_results),
-        "table_rows": sum(r.rows for r in table_results),
-        "table_source_rows": sum(r.source_rows for r in table_results),
-        "images_total": len(inv.images),
-        "images_selected": len(jobs),
-        "images_ok": img_stats["ok"],
-        "images_with_text": img_stats["with_text"],
-        "text_boxes": img_stats["text_boxes"],
-        "images_linked": img_stats["linked"],
-        "review": len(review),
-        "other_files": len(inv.other),
-        "patients_coded": len(cw),
-        "share_dir": share,
-        "private_dir": private,
-        "seconds": int((_dt.datetime.now() - started).total_seconds()),
-        "table_profiles": [
-            {"file": os.path.basename(r.output), "source_rows": r.source_rows,
-             "sample_rows": r.rows, "sheets": r.profiles}
-            for r in table_results if not r.error
-        ],
-        "image_profile": _image_profile(inv, img_info),
-    }
-    _report(os.path.join(share, "DEIDENTIFICATION_REPORT.txt"), summary, table_results,
-            ocr, started)
-    return summary
-
+    return r.finish()
 
 def _image_profile(inv: Inventory, info: list) -> dict:
     fmt_all = Counter()

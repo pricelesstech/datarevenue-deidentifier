@@ -1,5 +1,13 @@
 # Data Revenue De-Identifier
 
+**Browser version (main path for clients):** `web/` + `deid/web.py`. The same Python engine
+runs in the browser via Pyodide in a Web Worker; X-ray text detection runs with ONNX Runtime
+Web (`web/ocr.js`, same PP-OCRv4 detection model). Files never leave the browser. Build with
+`python tools/build_web.py` (output `web/dist`, a static site); `.github/workflows/pages.yml`
+publishes it to GitHub Pages on push to main. Sample mode only (max 200 images).
+
+**Desktop version:** the same engine packaged for Windows/macOS (below).
+
 Free desktop app (Windows + macOS) that Data Revenue clients download to make a safe data
 sample in minutes. Runs fully offline: drag in spreadsheets (CSV, XLSX) and images (DICOM,
 JPG, PNG, TIFF, BMP), it removes identifiers under HIPAA Safe Harbor, asks the 15 Data
