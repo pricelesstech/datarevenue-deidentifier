@@ -1,0 +1,492 @@
+{
+ "engine_version": "1.2.0",
+ "total_questions": 15,
+ "max_datasets": 5,
+ "dataset_card": {
+  "intro": "Tell us about each dataset you have. Add one card per dataset.",
+  "name_question": {
+   "key": "name",
+   "number": 1,
+   "prompt": "What do you collect?",
+   "help": "Plain words are perfect, e.g. 'patient visit records' or 'dealer service history'.",
+   "max_length": 120
+  },
+  "category_question": {
+   "key": "category",
+   "number": 1,
+   "prompt": "What kind of data is it?",
+   "options": [
+    {
+     "key": "customer",
+     "label": "People / customers",
+     "hint": "Customer, patient, member or contact records"
+    },
+    {
+     "key": "transactional",
+     "label": "Purchases / transactions",
+     "hint": "Orders, payments, invoices, claims"
+    },
+    {
+     "key": "behavioral",
+     "label": "Usage / behavior",
+     "hint": "App or web activity, clicks, engagement, location visits"
+    },
+    {
+     "key": "product",
+     "label": "Products / inventory",
+     "hint": "Catalogs, pricing, parts, SKUs"
+    },
+    {
+     "key": "financial",
+     "label": "Financial",
+     "hint": "Accounts, credit, lending, market data"
+    },
+    {
+     "key": "operational",
+     "label": "Operations / equipment",
+     "hint": "Sensors, machines, logistics, service history"
+    },
+    {
+     "key": "external",
+     "label": "Third-party / research",
+     "hint": "Data you gathered or enriched from outside sources"
+    }
+   ]
+  },
+  "questions": [
+   {
+    "key": "record_volume",
+    "number": 2,
+    "type": "single",
+    "prompt": "Roughly how many records does this dataset hold?",
+    "options": [
+     {
+      "key": "under_100k",
+      "label": "Under 100 thousand"
+     },
+     {
+      "key": "100k_1m",
+      "label": "100 thousand to 1 million"
+     },
+     {
+      "key": "1m_50m",
+      "label": "1 million to 50 million"
+     },
+     {
+      "key": "over_50m",
+      "label": "Over 50 million"
+     }
+    ],
+    "help": "Rows, profiles, events or documents. A rough band is fine."
+   },
+   {
+    "key": "history_years",
+    "number": 3,
+    "type": "single",
+    "prompt": "How many years of history does it cover?",
+    "options": [
+     {
+      "key": "under_1",
+      "label": "Under 1 year"
+     },
+     {
+      "key": "1_3",
+      "label": "1 to 3 years"
+     },
+     {
+      "key": "3_10",
+      "label": "3 to 10 years"
+     },
+     {
+      "key": "over_10",
+      "label": "More than 10 years"
+     }
+    ]
+   },
+   {
+    "key": "update_frequency",
+    "number": 4,
+    "type": "single",
+    "prompt": "How often is it updated?",
+    "options": [
+     {
+      "key": "realtime",
+      "label": "Continuously / real time"
+     },
+     {
+      "key": "daily_weekly",
+      "label": "Daily or weekly"
+     },
+     {
+      "key": "monthly_quarterly",
+      "label": "Monthly or quarterly"
+     },
+     {
+      "key": "static",
+      "label": "Rarely: mostly a historical archive"
+     }
+    ]
+   },
+   {
+    "key": "record_type",
+    "number": 5,
+    "type": "single",
+    "prompt": "What does one record describe?",
+    "options": [
+     {
+      "key": "person",
+      "label": "A person (customer, patient, member, employee)"
+     },
+     {
+      "key": "business",
+      "label": "A business or organization"
+     },
+     {
+      "key": "transaction",
+      "label": "A transaction, order, claim or visit"
+     },
+     {
+      "key": "product",
+      "label": "A product, part or item"
+     },
+     {
+      "key": "place",
+      "label": "A place, property or location"
+     },
+     {
+      "key": "device",
+      "label": "A machine, vehicle or device reading"
+     },
+     {
+      "key": "content",
+      "label": "A document, text, image, audio or video"
+     }
+    ],
+    "help": "Think of a single row or file: what is it about?"
+   }
+  ]
+ },
+ "company_questions": [
+  {
+   "key": "ownership",
+   "number": 6,
+   "type": "single",
+   "prompt": "Who owns this data?",
+   "options": [
+    {
+     "key": "own_outright",
+     "label": "We own it outright"
+    },
+    {
+     "key": "own_with_consent",
+     "label": "We own it, collected with user consent"
+    },
+    {
+     "key": "mixed",
+     "label": "Mixed: some ours, some licensed from others"
+    },
+    {
+     "key": "licensed_only",
+     "label": "Mostly licensed from third parties"
+    },
+    {
+     "key": "unsure",
+     "label": "Not sure"
+    }
+   ]
+  },
+  {
+   "key": "contracts",
+   "number": 7,
+   "type": "single",
+   "prompt": "Do any contracts stop you from sharing, licensing or selling this data?",
+   "options": [
+    {
+     "key": "none",
+     "label": "No restrictions we know of"
+    },
+    {
+     "key": "some_limits",
+     "label": "Some limits, but we could share parts of it"
+    },
+    {
+     "key": "blocks_sale",
+     "label": "Yes, contracts block sharing or selling it"
+    },
+    {
+     "key": "not_sure",
+     "label": "Not sure"
+    }
+   ],
+   "help": "Customer agreements, vendor terms, partner or platform licences."
+  },
+  {
+   "key": "regulated",
+   "number": 8,
+   "type": "single",
+   "prompt": "Does the data include health, financial or children's personal information?",
+   "options": [
+    {
+     "key": "none",
+     "label": "No regulated personal data"
+    },
+    {
+     "key": "some_managed",
+     "label": "Some, with a compliance program in place"
+    },
+    {
+     "key": "heavy_managed",
+     "label": "A lot, and it is actively managed for compliance"
+    },
+    {
+     "key": "unmanaged",
+     "label": "Yes, and we have no formal compliance program"
+    }
+   ]
+  },
+  {
+   "key": "uniqueness",
+   "number": 9,
+   "type": "single",
+   "prompt": "Could a buyer get this data anywhere else?",
+   "options": [
+    {
+     "key": "proprietary",
+     "label": "No, only we have it"
+    },
+    {
+     "key": "hard_to_replicate",
+     "label": "Others could build it, but it would take years"
+    },
+    {
+     "key": "some_overlap",
+     "label": "Some of it is available from other sources"
+    },
+    {
+     "key": "commodity",
+     "label": "Yes, it is widely available"
+    }
+   ]
+  },
+  {
+   "key": "export_speed",
+   "number": 10,
+   "type": "single",
+   "prompt": "If we asked for a sample export tomorrow, how long would it take?",
+   "options": [
+    {
+     "key": "one_day",
+     "label": "About a day"
+    },
+    {
+     "key": "one_week",
+     "label": "About a week"
+    },
+    {
+     "key": "month_plus",
+     "label": "A month or more"
+    },
+    {
+     "key": "dont_know",
+     "label": "Not sure"
+    }
+   ],
+   "help": "This tells us how organized and clean the data is today."
+  },
+  {
+   "key": "annual_revenue",
+   "number": 11,
+   "type": "single",
+   "prompt": "What is your company's approximate annual revenue?",
+   "options": [
+    {
+     "key": "under_250k",
+     "label": "Under $250K"
+    },
+    {
+     "key": "250k_1m",
+     "label": "$250K to $1M"
+    },
+    {
+     "key": "1m_10m",
+     "label": "$1M to $10M"
+    },
+    {
+     "key": "10m_100m",
+     "label": "$10M to $100M"
+    },
+    {
+     "key": "over_100m",
+     "label": "Over $100M"
+    }
+   ],
+   "follow_up": {
+    "when": [
+     "10m_100m",
+     "over_100m"
+    ],
+    "key": "storage_spend",
+    "type": "single",
+    "prompt": "Roughly what does your company spend a year on cloud and data storage?",
+    "help": "AWS, Azure, Google Cloud, Snowflake, data centers. A rough band is fine.",
+    "options": [
+     {
+      "key": "under_250k",
+      "label": "Under $250K"
+     },
+     {
+      "key": "250k_1m",
+      "label": "$250K to $1M"
+     },
+     {
+      "key": "1m_5m",
+      "label": "$1M to $5M"
+     },
+     {
+      "key": "over_5m",
+      "label": "Over $5M"
+     },
+     {
+      "key": "not_sure",
+      "label": "Not sure"
+     }
+    ]
+   }
+  },
+  {
+   "key": "work_data",
+   "number": 12,
+   "type": "multi",
+   "prompt": "Which of these does your company keep?",
+   "options": [
+    {
+     "key": "procedures",
+     "label": "Written procedures, manuals or playbooks"
+    },
+    {
+     "key": "knowledge_base",
+     "label": "Internal documents, wikis or a knowledge base"
+    },
+    {
+     "key": "support_logs",
+     "label": "Support tickets, chat or call logs"
+    },
+    {
+     "key": "crm_activity",
+     "label": "CRM or sales activity history"
+    },
+    {
+     "key": "workflow_tools",
+     "label": "Project or workflow tools (Jira, Asana, ServiceNow, etc.)"
+    },
+    {
+     "key": "none",
+     "label": "None of these"
+    }
+   ],
+   "help": "Records of how your team does its work. Pick all that apply.",
+   "exclusive": "none"
+  },
+  {
+   "key": "monetization_goal",
+   "number": 13,
+   "type": "single",
+   "prompt": "What do you want most from your data?",
+   "options": [
+    {
+     "key": "recurring_revenue",
+     "label": "Recurring licensing revenue"
+    },
+    {
+     "key": "cash_now",
+     "label": "A one-time sale for cash now"
+    },
+    {
+     "key": "ai_partnerships",
+     "label": "AI partnerships"
+    },
+    {
+     "key": "company_valuation",
+     "label": "A higher company valuation"
+    },
+    {
+     "key": "exploring",
+     "label": "Exploring options"
+    }
+   ]
+  },
+  {
+   "key": "buyer_interest",
+   "number": 14,
+   "type": "single",
+   "prompt": "Has anyone asked to buy, license or partner on your data?",
+   "options": [
+    {
+     "key": "yes_known",
+     "label": "Yes, and we know who"
+    },
+    {
+     "key": "yes_informal",
+     "label": "Yes, informally"
+    },
+    {
+     "key": "no",
+     "label": "No"
+    }
+   ],
+   "follow_up": {
+    "when": "yes_known",
+    "key": "buyer_names",
+    "prompt": "Who asked? (optional)",
+    "max_length": 300
+   }
+  },
+  {
+   "key": "buyer_exclusions",
+   "number": 15,
+   "type": "multi",
+   "prompt": "Is there anyone you won't sell or license to?",
+   "options": [
+    {
+     "key": "competitors",
+     "label": "Direct competitors"
+    },
+    {
+     "key": "industries",
+     "label": "Specific industries"
+    },
+    {
+     "key": "outside_us",
+     "label": "Buyers outside the US"
+    },
+    {
+     "key": "none",
+     "label": "No restrictions"
+    }
+   ],
+   "help": "Pick all that apply.",
+   "exclusive": "none",
+   "follow_up": {
+    "when": "any_except_exclusive",
+    "key": "exclusion_detail",
+    "prompt": "Anything specific? (optional)",
+    "max_length": 300
+   }
+  }
+ ],
+ "tech_contact": {
+  "prompt": "Who is your technical contact for this data? (optional)",
+  "fields": [
+   {
+    "key": "tech_contact_name",
+    "label": "Name",
+    "max_length": 120
+   },
+   {
+    "key": "tech_contact_email",
+    "label": "Email",
+    "max_length": 320
+   }
+  ]
+ }
+}

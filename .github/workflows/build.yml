@@ -1,0 +1,146 @@
+﻿name: Build installers
+
+# Builds the Windows installer and the macOS disk images, tests each packaged app on fake
+# data, and (on a version tag like v1.1.0) attaches them to a GitHub Release.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: sudo apt-get update && sudo apt-get install -y libgl1 libglib2.0-0
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q tests
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    env:
+      HAS_WIN_CERT: ${{ secrets.WIN_CERT_PFX != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -r requirements.txt
+      - name: Build app
+        run: python build.py
+      - name: Smoke test the packaged app on fake data
+        shell: pwsh
+        run: |
+          python tools/make_samples.py "$env:RUNNER_TEMP\in"
+          $exe = "dist\Data Revenue De-Identifier\Data Revenue De-Identifier.exe"
+          Start-Process -Wait -FilePath $exe -ArgumentList "--cli","`"$env:RUNNER_TEMP\in`"","`"$env:RUNNER_TEMP\out`""
+          $j = Get-Content "$env:RUNNER_TEMP\out\cli_summary.json" | ConvertFrom-Json
+          if ($j.images_ok -ne 4 -or $j.tables -ne 2) { throw "smoke test failed: $($j | ConvertTo-Json -Depth 2)" }
+      - name: Sign app (only if a signing certificate is configured)
+        if: env.HAS_WIN_CERT == 'true'
+        env:
+          WIN_CERT_PFX: ${{ secrets.WIN_CERT_PFX }}
+          WIN_CERT_PASSWORD: ${{ secrets.WIN_CERT_PASSWORD }}
+        shell: pwsh
+        run: |
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\cert.pfx", [Convert]::FromBase64String($env:WIN_CERT_PFX))
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" | Select-Object -Last 1
+          & $signtool sign /f "$env:RUNNER_TEMP\cert.pfx" /p $env:WIN_CERT_PASSWORD /fd sha256 /tr http://timestamp.digicert.com /td sha256 "dist\Data Revenue De-Identifier\Data Revenue De-Identifier.exe"
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $ver = python -c "from deid import __version__; print(__version__)"
+          if (-not (Get-Command iscc -ErrorAction SilentlyContinue)) { choco install innosetup -y --no-progress }
+          $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
+          & $iscc "/DAppVersion=$ver" installer\windows.iss
+          if ($env:WIN_CERT_PFX) {
+            $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" | Select-Object -Last 1
+            & $signtool sign /f "$env:RUNNER_TEMP\cert.pfx" /p $env:WIN_CERT_PASSWORD /fd sha256 /tr http://timestamp.digicert.com /td sha256 dist\DataRevenue-DeIdentifier-Setup.exe
+          }
+        env:
+          WIN_CERT_PFX: ${{ secrets.WIN_CERT_PFX }}
+          WIN_CERT_PASSWORD: ${{ secrets.WIN_CERT_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/DataRevenue-DeIdentifier-Setup.exe
+
+  macos:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {runner: macos-latest, arch: AppleSilicon}
+          - {runner: macos-15-intel, arch: Intel}
+    runs-on: ${{ matrix.runner }}
+    env:
+      HAS_MAC_CERT: ${{ secrets.MAC_CERT_P12 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -r requirements.txt
+      - name: Build app
+        run: python build.py
+      - name: Smoke test the packaged app on fake data
+        run: |
+          python tools/make_samples.py "$RUNNER_TEMP/in"
+          "dist/Data Revenue De-Identifier.app/Contents/MacOS/Data Revenue De-Identifier" --cli "$RUNNER_TEMP/in" "$RUNNER_TEMP/out"
+          python -c "import json,sys; j=json.load(open('$RUNNER_TEMP/out/cli_summary.json')); sys.exit(0 if j['images_ok']==4 and j['tables']==2 else 'smoke test failed: '+json.dumps(j)[:800])"
+      - name: Sign and notarize (only if an Apple Developer ID is configured)
+        if: env.HAS_MAC_CERT == 'true'
+        env:
+          MAC_CERT_P12: ${{ secrets.MAC_CERT_P12 }}
+          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          MAC_SIGN_IDENTITY: ${{ secrets.MAC_SIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          echo "$MAC_CERT_P12" | base64 --decode > cert.p12
+          security create-keychain -p ci build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p ci build.keychain
+          security import cert.p12 -k build.keychain -P "$MAC_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k ci build.keychain
+          codesign --deep --force --options runtime --timestamp --sign "$MAC_SIGN_IDENTITY" "dist/Data Revenue De-Identifier.app"
+          echo "SIGNED=1" >> $GITHUB_ENV
+      - name: Build disk image
+        run: |
+          VER=$(python -c "from deid import __version__; print(__version__)")
+          mkdir -p dmg && cp -R "dist/Data Revenue De-Identifier.app" dmg/ && ln -s /Applications dmg/Applications
+          hdiutil create -volname "Data Revenue De-Identifier" -srcfolder dmg -ov -format UDZO \
+            "dist/DataRevenue-DeIdentifier-mac-${{ matrix.arch }}.dmg"
+      - name: Notarize disk image
+        if: ${{ env.SIGNED == '1' }}
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          DMG=$(ls dist/*.dmg)
+          codesign --force --sign "${{ secrets.MAC_SIGN_IDENTITY }}" "$DMG"
+          xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
+          xcrun stapler staple "$DMG"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-${{ matrix.arch }}
+          path: dist/*.dmg
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {path: out, merge-multiple: true}
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: out/*
