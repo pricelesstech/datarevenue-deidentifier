@@ -25,6 +25,28 @@ def test_pages_intact(path):
     assert "Leeds" not in s
 
 
+def test_buyer_questions():
+    import json
+
+    q = json.load(open(os.path.join(ROOT, "deid", "ui", "buyer_questions.json"), encoding="utf-8"))
+    qs = q["dataset_card"]["questions"] + q["company_questions"]
+    keys = [x["key"] for x in qs]
+    assert len(keys) == len(set(keys))
+    # the client is making the sample right now: never ask how fast they could export one
+    assert "export_speed" not in keys
+    assert not any("sample" in x["prompt"].lower() for x in qs)
+    for k in ("data_formats", "industry", "ownership", "contracts", "ai_terms", "sensitive",
+              "exclusivity", "prior_sharing"):
+        assert k in keys, k
+    industries = next(x for x in qs if x["key"] == "industry")["options"]
+    assert len(industries) >= 10  # all industries, not one sector
+    for x in qs:
+        assert x["type"] in ("single", "multi") and len(x["options"]) >= 2
+        assert len({o["key"] for o in x["options"]}) == len(x["options"])
+    text = json.dumps(q)
+    assert "—" not in text
+
+
 @pytest.mark.parametrize("path", SCRIPTS)
 def test_scripts_parse(path):
     node = shutil.which("node")

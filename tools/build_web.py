@@ -1,7 +1,7 @@
 """Assemble the browser version into web/dist (a static site, no server code).
 
   index.html app.js worker.js ocr.js icon.png
-  py/deid/*.py + py/deid/ui/snapshot_questions.json   the same engine as the desktop app
+  py/deid/*.py + py/deid/ui/buyer_questions.json   the same engine as the desktop app
   py/wheels/*.whl                                      pydicom, openpyxl (pure Python)
   py/manifest.json
   models/det.onnx                                      PP-OCRv4 text detection (Apache-2.0)
@@ -23,9 +23,10 @@ WHEELS = ["pydicom==3.0.2", "openpyxl==3.1.5", "et-xmlfile==2.0.0"]
 
 def main():
     shutil.rmtree(DIST, ignore_errors=True)
-    os.makedirs(os.path.join(DIST, "py", "deid", "ui"))
-    os.makedirs(os.path.join(DIST, "py", "wheels"))
-    os.makedirs(os.path.join(DIST, "models"))
+    # exist_ok: a synced folder (OneDrive) can keep an emptied directory around briefly
+    os.makedirs(os.path.join(DIST, "py", "deid", "ui"), exist_ok=True)
+    os.makedirs(os.path.join(DIST, "py", "wheels"), exist_ok=True)
+    os.makedirs(os.path.join(DIST, "models"), exist_ok=True)
     for f in ("index.html", "app.js", "worker.js", "ocr.js"):
         shutil.copy(os.path.join(WEB, f), DIST)
     shutil.copy(os.path.join(ROOT, "assets", "icon.png"), DIST)
@@ -34,9 +35,9 @@ def main():
     for p in sorted(glob.glob(os.path.join(ROOT, "deid", "*.py"))):
         shutil.copy(p, os.path.join(DIST, "py", "deid"))
         files.append("deid/" + os.path.basename(p))
-    shutil.copy(os.path.join(ROOT, "deid", "ui", "snapshot_questions.json"),
+    shutil.copy(os.path.join(ROOT, "deid", "ui", "buyer_questions.json"),
                 os.path.join(DIST, "py", "deid", "ui"))
-    files.append("deid/ui/snapshot_questions.json")
+    files.append("deid/ui/buyer_questions.json")
 
     subprocess.check_call([sys.executable, "-m", "pip", "download", "--no-deps",
                            "--only-binary", ":all:", "--python-version", "3.12",

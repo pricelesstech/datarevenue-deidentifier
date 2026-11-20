@@ -90,7 +90,7 @@ select{font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:7
 <!-- 1 welcome -->
 <section class="screen on" id="s-welcome">
   <h1>Share a safe sample of your data in minutes</h1>
-  <p class="lead">Add your spreadsheets and X-rays. This program removes every patient and personal identifier, builds a short sample with a summary, and gives you one file to send to Data Revenue.</p>
+  <p class="lead">Add your spreadsheets and images. This program removes personal identifiers (customers, patients, members, employees), builds a short sample with a summary, and gives you one file to send to Data Revenue.</p>
   <div class="feat">
     <div><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div><b>Stays on your computer</b><span>No upload, no account, no internet needed.</span></div>
     <div><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.2"><path d="M12 3l8 3v6c0 5-3.4 8.8-8 10-4.6-1.2-8-5-8-10V6z"/></svg></div><b>Removes identifiers</b><span>Names, IDs, dates, addresses, and text printed on images (HIPAA Safe Harbor).</span></div>
@@ -145,7 +145,7 @@ select{font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:7
 <section class="screen" id="s-questions">
   <div class="prog"><div class="pbar"><i id="pbar"></i></div><div class="pmsg"><span id="pmsg">Starting...</span><span id="ppct"></span></div></div>
   <h2>While that runs: a few questions</h2>
-  <p class="lead">About 2 minutes. These help us understand the value of your data. Best guesses are fine.</p>
+  <p class="lead">About 3 minutes. These are the questions AI and data buyers ask first. Best guesses are fine.</p>
   <div id="qs"></div>
   <label class="f" for="notes">Anything else we should know? (optional)</label>
   <textarea id="notes" rows="3"></textarea>
@@ -168,7 +168,7 @@ select{font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:7
   <div class="file"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="1.6"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M10 13h4M10 17h4"/></svg><div><b id="zip-name"></b><span class="hint" id="zip-meta"></span></div></div>
   <div class="row"><button class="btn" onclick="api().reveal(state.zip)">Show the file</button><button class="btn ghost" onclick="api().open_path(state.html)">See the summary</button></div>
   <div id="done-warn"></div>
-  <div class="warn"><b>Keep private, never send:</b> the folder <span id="priv"></span>. It holds the key that links study codes back to your patients.</div>
+  <div class="warn"><b>Keep private, never send:</b> the folder <span id="priv"></span>. It holds the key that links study codes back to your own customer, patient or account numbers.</div>
   <p class="hint">Before sending, open a few images and spreadsheets from the summary folder and make sure nothing identifying is visible.</p>
   <button class="btn link" onclick="location.reload()">Make another sample</button>
 </section>
@@ -275,7 +275,7 @@ function buildQuestions(){
   const card = Q.dataset_card;
   let h = "";
   h += `<div class="q" id="q-name"><h3>${esc(card.name_question.prompt)}</h3><div class="hint">${esc(card.name_question.help||"")}</div><input type="text" id="ds-name" maxlength="${card.name_question.max_length||120}" style="margin-top:10px"></div>`;
-  const all = [[card.category_question,"ds"], ...card.questions.map(q=>[q,"ds"]), ...Q.company_questions.map(q=>[q,"co"])];
+  const all = [[card.category_question,"ds"], ...card.questions.map(q=>[q,"ds"]), ...Q.company_questions.map(q=>[q,"co"])].filter(([q])=>q);
   all.forEach(([q,scope])=>{
     const multi = q.type==="multi";
     h += `<div class="q" id="q-${q.key}" data-key="${q.key}" data-scope="${scope}" data-multi="${multi}"><h3>${esc(q.prompt)}</h3>`;

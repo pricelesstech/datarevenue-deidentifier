@@ -31,7 +31,7 @@ worker.onmessage = (ev) => {
     showProgress(m.msg, m.n, m.total);
   }
 };
-fetch("py/deid/ui/snapshot_questions.json").then((r) => r.json()).then((q) => { Q = q; });
+fetch("py/deid/ui/buyer_questions.json").then((r) => r.json()).then((q) => { Q = q; });
 
 function go(name) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === "s-" + name));
@@ -158,7 +158,7 @@ function buildQuestions() {
   if (!Q) return;
   const card = Q.dataset_card;
   let h = `<div class="q" id="q-name"><h3>${esc(card.name_question.prompt)}</h3><div class="hint">${esc(card.name_question.help || "")}</div><input type="text" id="ds-name" maxlength="${card.name_question.max_length || 120}" style="margin-top:10px"></div>`;
-  const all = [[card.category_question, "ds"], ...card.questions.map((q) => [q, "ds"]), ...Q.company_questions.map((q) => [q, "co"])];
+  const all = [[card.category_question, "ds"], ...card.questions.map((q) => [q, "ds"]), ...Q.company_questions.map((q) => [q, "co"])].filter(([q]) => q);
   for (const [q, scope] of all) {
     const multi = q.type === "multi";
     h += `<div class="q" data-key="${q.key}" data-scope="${scope}" data-multi="${multi}"><h3>${esc(q.prompt)}</h3>`;

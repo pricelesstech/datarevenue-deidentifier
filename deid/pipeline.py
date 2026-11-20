@@ -193,7 +193,7 @@ class Run:
             self.img_stats["review"] += 1
             self.review.append((res["src"], res.get("reason", "")))
             self.file_log.append((res["src"], "", "review", res.get("reason", "")))
-        self.progress(f"X-ray / image {self.done_images} of {len(self.jobs)}",
+        self.progress(f"Image {self.done_images} of {len(self.jobs)}",
                       self.done_images, len(self.jobs))
 
     def finish(self) -> dict:
@@ -356,7 +356,7 @@ def _report(path, s, table_results, ocr, started):
     L.append("WHAT WAS DONE")
     L.append("  - Names, street address, city, county, phone, fax, email, SSN, account,")
     L.append("    insurance, license, device and vehicle numbers, URLs, IPs: removed.")
-    L.append("  - Patient IDs / record numbers: replaced with random study codes")
+    L.append("  - Customer, patient, member or record IDs: replaced with random study codes")
     L.append("    (P + 8 digits) not derived from the original number. The code key is")
     L.append("    held only by the data owner and is not included here.")
     L.append("  - Dates: year only. Birth years for people 90 or older are grouped.")
@@ -370,7 +370,7 @@ def _report(path, s, table_results, ocr, started):
     L.append("    UIDs; dates reduced to year.")
     L.append("  - Other images: all metadata (EXIF, GPS, comments) removed.")
     if ocr:
-        L.append("  - Text printed inside images (names, IDs, dates, clinic labels) was")
+        L.append("  - Text printed inside images (names, IDs, dates, labels) was")
         L.append("    detected by an offline text-recognition model and blacked out.")
     else:
         L.append("  - Printed text inside images was NOT checked in this run.")

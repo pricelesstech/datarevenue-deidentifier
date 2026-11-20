@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Data De-Identifier | Data Revenue</title>
-<meta name="description" content="Free tool that removes patient and personal identifiers from spreadsheets and X-rays inside your browser, then creates a safe data sample to share. Nothing is uploaded.">
+<meta name="description" content="Free tool that removes personal identifiers from spreadsheets and images inside your browser, then creates a safe data sample to share. Nothing is uploaded.">
 <link rel="icon" href="icon.png">
 <style>
 :root{--navy:#0B2A4A;--teal:#0E8C8C;--teal-l:#e5f4f4;--ink:#1d2733;--mute:#66727f;--line:#dde4ea;--bg:#f4f7f9;--red:#b3403f}
@@ -98,10 +98,10 @@ footer a{color:var(--mute)}
 
 <section class="screen on" id="s-welcome">
   <h1>Share a safe sample of your data in minutes</h1>
-  <p class="lead">Add your spreadsheets and X-rays. This page removes every patient and personal identifier right here in your browser, builds a short sample with a summary, and gives you one file to send to Data Revenue.</p>
+  <p class="lead">Add your spreadsheets and images. This page removes personal identifiers (customers, patients, members, employees) right here in your browser, builds a short sample with a summary, and gives you one file to send to Data Revenue.</p>
   <div class="feat">
     <div><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div><b>Nothing is uploaded</b><span>Your files are processed inside this browser tab and never sent anywhere.</span></div>
-    <div><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.2"><path d="M12 3l8 3v6c0 5-3.4 8.8-8 10-4.6-1.2-8-5-8-10V6z"/></svg></div><b>Removes identifiers</b><span>Names, IDs, dates, addresses, and text printed on images (HIPAA Safe Harbor).</span></div>
+    <div><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.2"><path d="M12 3l8 3v6c0 5-3.4 8.8-8 10-4.6-1.2-8-5-8-10V6z"/></svg></div><b>Removes identifiers</b><span>Names, emails, phone numbers, IDs, addresses, exact dates, and text printed on images.</span></div>
     <div><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.2"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/></svg></div><b>One file to send</b><span>A small sample plus a summary of your whole data set.</span></div>
   </div>
   <button class="btn" onclick="go('details')">Get started</button>
@@ -151,7 +151,7 @@ footer a{color:var(--mute)}
 <section class="screen" id="s-questions">
   <div class="prog"><div class="pbar"><i id="pbar"></i></div><div class="pmsg"><span id="pmsg">Starting...</span><span id="ppct"></span></div></div>
   <h2>While that runs: a few questions</h2>
-  <p class="lead">About 2 minutes. These help us understand the value of your data. Best guesses are fine. Keep this tab open.</p>
+  <p class="lead">About 3 minutes. These are the questions AI and data buyers ask first. Best guesses are fine. Keep this tab open.</p>
   <div id="qs"></div>
   <label class="f" for="notes">Anything else we should know? (optional)</label>
   <textarea id="notes" rows="3"></textarea>
@@ -172,7 +172,7 @@ footer a{color:var(--mute)}
   <div class="file"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="1.6" aria-hidden="true"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M10 13h4M10 17h4"/></svg><div><b id="zip-name"></b><span class="hint" id="zip-meta"></span></div></div>
   <div class="row"><a class="btn" id="dl-zip" download>Download the sample</a><a class="btn ghost" id="view-html" target="_blank" rel="noopener">See the summary</a></div>
   <div id="done-warn"></div>
-  <div class="warn" id="key-box"><b>Keep private, never send:</b> the study code key links each study code back to your patient numbers. Save it somewhere safe on your side. <a href="#" id="dl-key" download>Download the study code key</a></div>
+  <div class="warn" id="key-box"><b>Keep private, never send:</b> the study code key links each study code back to your own customer, patient or account numbers. Save it somewhere safe on your side. <a href="#" id="dl-key" download>Download the study code key</a></div>
   <p class="hint">Before sending, open the summary and a few files in the zip and make sure nothing identifying is visible. Closing this tab clears everything from the browser's memory.</p>
   <button class="btn link" onclick="location.reload()">Make another sample</button>
 </section>

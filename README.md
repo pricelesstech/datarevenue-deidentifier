@@ -27,8 +27,8 @@ on this computer`.
 - `deid/tables.py`: two-pass spreadsheet processing, sampling, profiling
 - `deid/images.py`: DICOM allowlist header rebuild, metadata strip, OCR text redaction
 - `deid/profile.py`: whole-table column profile on de-identified values
-- `deid/package.py`: summary page + zip; `deid/ui/snapshot_questions.json` is exported from
-  `datarevenue-platform` `snapshot_catalog()` (re-export if the questions change)
+- `deid/package.py`: summary page + zip; questions in `deid/ui/buyer_questions.json` (what
+  AI and data buyers ask first; keys shared with the Data Snapshot use its option keys)
 - `deid/pipeline.py`: scan files/folders, run sample or full
 - `deid/ui/index.html` + `app.py`: the window (pywebview: Edge WebView2 / macOS WebKit)
 

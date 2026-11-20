@@ -1,0 +1,224 @@
+{
+ "version": "buyer-1.0",
+ "source": "What AI lab and data buyers ask first: the BizLink AI-lab form (industry, size, data types, anonymized), the buyer-side Data Inventory workbook (language, sensitive data, ownership, prior sharing) and the Data Snapshot (volume, history, updates, ownership, contracts, uniqueness, exclusions). Keys shared with the Snapshot keep the same option keys. No sample-export question: the client is making the sample right now.",
+ "intro": "These are the questions AI and data buyers ask first. Best guesses are fine.",
+ "dataset_card": {
+  "name_question": {
+   "key": "name",
+   "prompt": "What is this data?",
+   "help": "Plain words are perfect, e.g. 'customer support tickets', 'store sales', 'patient visit records', 'project drawings' or 'machine sensor logs'.",
+   "max_length": 120
+  },
+  "questions": [
+   {
+    "key": "data_formats",
+    "type": "multi",
+    "prompt": "What form is it in?",
+    "help": "AI buyers price data by its form. Pick all that apply.",
+    "options": [
+     {"key": "tables", "label": "Spreadsheets or database tables"},
+     {"key": "documents", "label": "Documents, PDFs or reports"},
+     {"key": "conversations", "label": "Emails, chats or support tickets"},
+     {"key": "images", "label": "Images, photos or scans"},
+     {"key": "audio_video", "label": "Audio, call recordings or video"},
+     {"key": "design_code", "label": "CAD, design files or source code"},
+     {"key": "sensor_logs", "label": "Sensor, machine or system logs"}
+    ]
+   },
+   {
+    "key": "record_volume",
+    "type": "single",
+    "prompt": "Roughly how many records, files or documents?",
+    "help": "Across the whole data set, not just this sample. A rough band is fine.",
+    "options": [
+     {"key": "under_100k", "label": "Under 100 thousand"},
+     {"key": "100k_1m", "label": "100 thousand to 1 million"},
+     {"key": "1m_50m", "label": "1 million to 50 million"},
+     {"key": "over_50m", "label": "Over 50 million"}
+    ]
+   },
+   {
+    "key": "history_years",
+    "type": "single",
+    "prompt": "How many years of history does it cover?",
+    "options": [
+     {"key": "under_1", "label": "Under 1 year"},
+     {"key": "1_3", "label": "1 to 3 years"},
+     {"key": "3_10", "label": "3 to 10 years"},
+     {"key": "over_10", "label": "More than 10 years"}
+    ]
+   },
+   {
+    "key": "update_frequency",
+    "type": "single",
+    "prompt": "Does new data keep coming in?",
+    "help": "Many buyers pay more for an ongoing feed than a one-time file.",
+    "options": [
+     {"key": "realtime", "label": "Yes, continuously or in real time"},
+     {"key": "daily_weekly", "label": "Yes, daily or weekly"},
+     {"key": "monthly_quarterly", "label": "Yes, monthly or quarterly"},
+     {"key": "static", "label": "No, it is mostly a historical archive"}
+    ]
+   },
+   {
+    "key": "outcomes",
+    "type": "single",
+    "prompt": "Do the records show outcomes or expert decisions?",
+    "help": "For example a diagnosis, an approved claim, a fixed fault, a final price, a won deal or a reviewed design. AI buyers value these most.",
+    "options": [
+     {"key": "most", "label": "Yes, for most records"},
+     {"key": "some", "label": "For some records"},
+     {"key": "no", "label": "No"},
+     {"key": "unsure", "label": "Not sure"}
+    ]
+   },
+   {
+    "key": "language",
+    "type": "single",
+    "prompt": "What language is the text in?",
+    "help": "Emails, documents, notes and records together.",
+    "options": [
+     {"key": "english_all", "label": "All or nearly all English"},
+     {"key": "english_mostly", "label": "Mostly English (75 to 95%)"},
+     {"key": "mixed", "label": "About half English"},
+     {"key": "other", "label": "Mostly another language"},
+     {"key": "no_text", "label": "Little or no text (numbers, images, sensor data)"}
+    ]
+   }
+  ]
+ },
+ "company_questions": [
+  {
+   "key": "industry",
+   "type": "single",
+   "prompt": "What industry are you in?",
+   "options": [
+    {"key": "healthcare", "label": "Healthcare or life sciences"},
+    {"key": "financial", "label": "Banking, lending, insurance or payments"},
+    {"key": "retail", "label": "Retail, ecommerce or consumer brands"},
+    {"key": "manufacturing", "label": "Manufacturing or industrial"},
+    {"key": "construction", "label": "Construction, architecture or engineering"},
+    {"key": "professional", "label": "Legal, accounting or professional services"},
+    {"key": "real_estate", "label": "Real estate or property"},
+    {"key": "logistics", "label": "Transportation, logistics or automotive"},
+    {"key": "energy", "label": "Energy, utilities or agriculture"},
+    {"key": "media", "label": "Media, entertainment or gaming"},
+    {"key": "software", "label": "Software, telecom or technology"},
+    {"key": "education", "label": "Education, government or nonprofit"},
+    {"key": "other", "label": "Something else"}
+   ]
+  },
+  {
+   "key": "employees",
+   "type": "single",
+   "prompt": "How many people work at the company?",
+   "help": "Some AI buyers only work with companies above a certain size.",
+   "options": [
+    {"key": "1_10", "label": "1 to 10"},
+    {"key": "11_50", "label": "11 to 50"},
+    {"key": "51_200", "label": "51 to 200"},
+    {"key": "201_1000", "label": "201 to 1,000"},
+    {"key": "over_1000", "label": "Over 1,000"}
+   ]
+  },
+  {
+   "key": "ownership",
+   "type": "single",
+   "prompt": "Who owns this data?",
+   "options": [
+    {"key": "own_outright", "label": "We own it outright"},
+    {"key": "own_with_consent", "label": "We own it, collected with user consent"},
+    {"key": "mixed", "label": "Mixed: some ours, some licensed from others"},
+    {"key": "licensed_only", "label": "Mostly licensed from third parties"},
+    {"key": "unsure", "label": "Not sure"}
+   ]
+  },
+  {
+   "key": "contracts",
+   "type": "single",
+   "prompt": "Do any contracts stop you from sharing, licensing or selling this data?",
+   "help": "Customer agreements, NDAs, vendor terms, partner or platform licences.",
+   "options": [
+    {"key": "none", "label": "No restrictions we know of"},
+    {"key": "some_limits", "label": "Some limits, but we could share parts of it"},
+    {"key": "blocks_sale", "label": "Yes, contracts block sharing or selling it"},
+    {"key": "not_sure", "label": "Not sure"}
+   ]
+  },
+  {
+   "key": "ai_terms",
+   "type": "single",
+   "prompt": "Do your customer terms or consents say anything about using the data for AI?",
+   "help": "Privacy policy, terms of service, patient or customer consent forms.",
+   "options": [
+    {"key": "allowed", "label": "Yes, they allow AI, research or analytics use"},
+    {"key": "silent", "label": "They don't mention it"},
+    {"key": "ruled_out", "label": "They rule it out"},
+    {"key": "unsure", "label": "Not sure"}
+   ]
+  },
+  {
+   "key": "sensitive",
+   "type": "multi",
+   "prompt": "Is any of this in the full data set?",
+   "help": "Some buyers cannot take these, and others need them kept apart. This tool removes identifiers, but buyers still ask. Pick all that apply.",
+   "options": [
+    {"key": "health", "label": "Health or medical information"},
+    {"key": "financial", "label": "Payment card, bank or credit details"},
+    {"key": "minors", "label": "Information about people under 18"},
+    {"key": "biometric", "label": "Voice recordings, faces or biometrics"},
+    {"key": "hr", "label": "Employee HR or payroll records"},
+    {"key": "scraped", "label": "Data collected from other websites or bought lists"},
+    {"key": "none", "label": "None of these"}
+   ]
+  },
+  {
+   "key": "uniqueness",
+   "type": "single",
+   "prompt": "Could a buyer get this data anywhere else?",
+   "options": [
+    {"key": "proprietary", "label": "No, only we have it"},
+    {"key": "hard_to_replicate", "label": "Others could build it, but it would take years"},
+    {"key": "some_overlap", "label": "Some of it is available from other sources"},
+    {"key": "commodity", "label": "Yes, it is widely available"}
+   ]
+  },
+  {
+   "key": "prior_sharing",
+   "type": "single",
+   "prompt": "Has this data already been sold, licensed or sent to anyone?",
+   "help": "Like a data buyer, broker or AI company. Fine if so: we plan around it.",
+   "options": [
+    {"key": "no", "label": "No"},
+    {"key": "sample_only", "label": "Only a sample or a description"},
+    {"key": "licensed", "label": "Yes, we have licensed or sold it"},
+    {"key": "in_talks", "label": "We are in talks with a buyer or broker"},
+    {"key": "unsure", "label": "Not sure"}
+   ]
+  },
+  {
+   "key": "exclusivity",
+   "type": "single",
+   "prompt": "Would you consider an exclusive deal?",
+   "help": "Some AI buyers pay more to be the only buyer for a set time.",
+   "options": [
+    {"key": "yes", "label": "Yes"},
+    {"key": "depends", "label": "Depends on the price"},
+    {"key": "no", "label": "No, non-exclusive only"},
+    {"key": "unsure", "label": "Not sure"}
+   ]
+  },
+  {
+   "key": "buyer_exclusions",
+   "type": "multi",
+   "prompt": "Is there anyone you won't sell or license to?",
+   "help": "Pick all that apply.",
+   "options": [
+    {"key": "competitors", "label": "Direct competitors"},
+    {"key": "industries", "label": "Specific industries"},
+    {"key": "outside_us", "label": "Buyers outside the US"},
+    {"key": "none", "label": "No restrictions"}
+   ]
+  }
+ ]
+}

@@ -19,7 +19,9 @@ import zipfile
 
 from . import __version__
 
-QUESTIONS_PATH = os.path.join(os.path.dirname(__file__), "ui", "snapshot_questions.json")
+# The questions AI and data buyers ask first (see "source" in the file). Keys shared with
+# the Data Snapshot use the same option keys.
+QUESTIONS_PATH = os.path.join(os.path.dirname(__file__), "ui", "buyer_questions.json")
 
 
 def load_questions() -> dict:
@@ -31,7 +33,9 @@ def _label_maps(cat: dict):
     """key -> (prompt, {option_key: label}) for every question."""
     out = {}
     card = cat["dataset_card"]
-    for q in [card["category_question"], *card["questions"], *cat["company_questions"]]:
+    for q in [card.get("category_question"), *card["questions"], *cat["company_questions"]]:
+        if not q:
+            continue
         out[q["key"]] = (q["prompt"], {o["key"]: o["label"] for o in q.get("options", [])})
     out["name"] = (card["name_question"]["prompt"], {})
     return out
@@ -149,7 +153,7 @@ def build_html(summary: dict, answers: dict, cat: dict, created: _dt.datetime) -
          f"<title>{_e(company)} data summary</title><style>{_CSS}</style></head><body>"]
     H.append(f"<header><div class='wrap'><h1>{_e(company)}: Data Sample Summary</h1>"
              f"<p>Prepared {created:%B %d, %Y} with the Data Revenue De-Identifier. "
-             f"All patient and personal identifiers removed (HIPAA Safe Harbor).</p>"
+             f"All personal identifiers removed (HIPAA Safe Harbor method).</p>"
              f"</div></header><div class='wrap'>")
     H.append("<h2>At a glance</h2><div class='cards'>")
     for big, small in [
@@ -165,7 +169,7 @@ def build_html(summary: dict, answers: dict, cat: dict, created: _dt.datetime) -
 
     rows = _answer_rows(answers, cat)
     if rows:
-        H.append("<h2>About this data (answered by the data owner)</h2><table>")
+        H.append("<h2>Buyer questions (answered by the data owner)</h2><table>")
         for q, a in rows:
             H.append(f"<tr><td class='mute' style='width:45%'>{_e(q)}</td><td>{_e(a)}</td></tr>")
         H.append("</table>")
@@ -224,11 +228,11 @@ def build_html(summary: dict, answers: dict, cat: dict, created: _dt.datetime) -
     H.append("<h2>How this sample was made</h2><div class='note small'>Created on the data "
              "owner's own computer; the original files were never uploaded. Names, "
              "addresses, phone "
-             "numbers, emails and ID numbers were removed; patient numbers were replaced with "
-             "random study codes; dates were reduced to the year; ZIP codes to 3 digits; "
-             "text printed on images was found and blacked out; all image metadata was "
-             "removed. The key that links study codes to real patients stays with the data "
-             "owner. Full details are in DEIDENTIFICATION_REPORT.txt.</div>")
+             "numbers, emails and ID numbers were removed; customer, patient or account "
+             "numbers were replaced with random study codes; dates were reduced to the year; "
+             "ZIP codes to 3 digits; text printed on images was found and blacked out; all "
+             "image metadata was removed. The key that links study codes back to real people "
+             "stays with the data owner. Full details are in DEIDENTIFICATION_REPORT.txt.</div>")
     H.append(f"<footer>Data Revenue De-Identifier v{_e(__version__)}</footer></div></body></html>")
     return "".join(H)
 
@@ -243,7 +247,7 @@ def build_package(summary: dict, answers: dict, out_base: str) -> dict:
     payload = {
         "tool_version": __version__,
         "created": created.isoformat(timespec="seconds"),
-        "snapshot_engine_version": cat.get("engine_version"),
+        "question_set": cat.get("version"),
         "answers": answers,
         "summary": {k: v for k, v in summary.items()
                     if k not in ("share_dir", "private_dir")},
