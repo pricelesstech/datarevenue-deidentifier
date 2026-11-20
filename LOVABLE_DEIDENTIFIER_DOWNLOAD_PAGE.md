@@ -1,8 +1,8 @@
 # Lovable prompt: De-Identifier download page (datarevenue.io/deidentifier)
 
 Paste everything below the line into the **datarevenue.io** (marketing site) Lovable project.
-The download links point at GitHub Releases of `pricelesstech/datarevenue-deidentifier`;
-they work once that repo is public and the first release is published.
+The download links point at GitHub Releases of `pricelesstech/datarevenue-deidentifier`
+(public; v1.1.0 published 2026-11-20). They always serve the newest release.
 
 ---
 
@@ -32,7 +32,7 @@ file names, or anything that sends data from the visitor: this page only offers 
   - `.../releases/latest/download/DataRevenue-DeIdentifier-mac-AppleSilicon.dmg`
   - `.../releases/latest/download/DataRevenue-DeIdentifier-mac-Intel.dmg`
   (full prefix `https://github.com/pricelesstech/datarevenue-deidentifier`)
-- Small grey line: "About 150 MB. Free. No account needed."
+- Small grey line: "About 100 MB. Free. No account needed."
 - Right side (desktop) / below (mobile): a simple illustration card showing a shield with a
   check mark and three rows "Names removed", "IDs replaced with codes", "Text on X-rays
   blacked out", each with a teal check.
