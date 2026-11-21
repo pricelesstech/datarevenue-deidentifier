@@ -116,7 +116,7 @@ select{font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:7
 <!-- 3 data -->
 <section class="screen" id="s-data">
   <h2>Add your data</h2>
-  <p class="lead">Spreadsheets (Excel, CSV) and images (DICOM, JPG, PNG, TIFF). Folders inside folders are included. Your original files are never changed.</p>
+  <p class="lead">Spreadsheets (Excel, CSV), documents (PDF, Word), emails (Outlook .msg, .eml), images (JPG, PNG, TIFF, DICOM) and zip files. Folders inside folders are included. Your original files are never changed.</p>
   <div class="drop" id="drop">
     <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="1.8"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
     <b>Drag files or folders here</b>
@@ -126,9 +126,17 @@ select{font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:7
   <div id="scan-busy" class="hint" style="display:none;margin-top:12px">Looking through your files...</div>
   <div id="scan-out" style="display:none">
     <div class="chips" id="chips"></div>
+    <div id="kind-card" style="border-radius:12px">
+      <b>What kind of data is this?</b>
+      <div class="hint" style="margin:4px 0 0">This decides how dates are handled. Everything else is removed the same way.</div>
+      <div class="choice" id="kind">
+        <div class="opt" data-v="business" onclick="selKind(this)"><span class="dot"></span><div><b>Business data</b><small>Orders, projects, emails, claims, service records and so on. Business dates are kept because they carry the value; dates of birth are still removed.</small></div></div>
+        <div class="opt" data-v="health" onclick="selKind(this)"><span class="dot"></span><div><b>Health or medical data</b><small>Patient records, visits, imaging. Strict HIPAA rule: every date is cut to the year.</small></div></div>
+      </div>
+    </div>
     <div class="choice" id="mode">
-      <div class="opt sel" data-v="sample" onclick="selMode(this)"><span class="dot"></span><div><b>Quick sample</b> <span class="tag">recommended</span><small>Up to <input type="text" id="n-rows" value="500" style="width:62px;padding:2px 6px"> random records per spreadsheet and <input type="text" id="n-imgs" value="25" style="width:50px;padding:2px 6px"> random images, plus a summary of everything. Usually a few minutes.</small></div></div>
-      <div class="opt" data-v="all" onclick="selMode(this)"><span class="dot"></span><div><b>Everything</b><small>De-identify every record and image. Large image sets can take hours.</small></div></div>
+      <div class="opt sel" data-v="sample" onclick="selMode(this)"><span class="dot"></span><div><b>Quick sample</b> <span class="tag">recommended</span><small>Up to <input type="text" id="n-rows" value="500" style="width:62px;padding:2px 6px"> random records per spreadsheet, <input type="text" id="n-docs" value="100" style="width:56px;padding:2px 6px"> random documents or emails and <input type="text" id="n-imgs" value="25" style="width:50px;padding:2px 6px"> random images, plus a summary of everything. Usually a few minutes.</small></div></div>
+      <div class="opt" data-v="all" onclick="selMode(this)"><span class="dot"></span><div><b>Everything</b><small>De-identify every record, document and image. Large sets can take hours.</small></div></div>
     </div>
     <details>
       <summary>Check how each spreadsheet column is handled (optional)</summary>
@@ -212,28 +220,41 @@ window.onScanned = function(r){
   document.getElementById("scan-busy").style.display="none";
   if(r.error){document.getElementById("data-err").textContent=r.error;return}
   state.inv = r;
-  const chips = [
-    [r.tables, "spreadsheets"], [r.images, "images"],
-  ];
-  let h = chips.map(([n,l])=>`<span class="chip"><b>${n.toLocaleString()}</b> ${n===1?l.slice(0,-1):l}</span>`).join("");
+  const pl = (n, one, many) => `<b>${n.toLocaleString()}</b> ${n===1?one:many}`;
+  let h = `<span class="chip">${pl(r.tables,"spreadsheet","spreadsheets")}</span><span class="chip">${pl(r.documents||0,"document or email","documents and emails")}</span><span class="chip">${pl(r.images,"image","images")}</span>`;
   if(r.dicom) h += `<span class="chip"><b>${r.dicom.toLocaleString()}</b> of them DICOM</span>`;
-  if(r.other) h += `<span class="chip">${r.other.toLocaleString()} other ${r.other===1?"file":"files"} (like PDFs) will be skipped</span>`;
+  if(r.archives) h += `<span class="chip">${r.archives.toLocaleString()} zip ${r.archives===1?"file":"files"} opened</span>`;
+  if(r.other) h += `<span class="chip">${r.other.toLocaleString()} other ${r.other===1?"file":"files"} will be skipped</span>`;
   h += `<button class="btn link" onclick="clearData()">Start over</button>`;
   document.getElementById("chips").innerHTML = h;
-  state.actions = {};
+  state.actions = {}; state.touched = new Set();
+  const suggest = (c) => (state.kind === "business" ? c.action_business : c.action) || c.action;
   let t = "<tr><th>Column</th><th>What happens</th></tr>";
   r.columns.forEach((c,i)=>{
-    state.actions[c.name] = c.action;
-    const opts = r.labels.map(([k,l])=>`<option value="${k}" ${k===c.action?"selected":""}>${esc(l)}</option>`).join("");
-    t += `<tr><td>${esc(c.name||"(blank)")}</td><td><select data-i="${i}" onchange="state.actions[state.inv.columns[this.dataset.i].name]=this.value">${opts}</select></td></tr>`;
+    const a = suggest(c);
+    state.actions[c.name] = a;
+    const opts = r.labels.map(([k,l])=>`<option value="${k}" ${k===a?"selected":""}>${esc(l)}</option>`).join("");
+    t += `<tr><td>${esc(c.name||"(blank)")}</td><td><select data-i="${i}" onchange="state.actions[state.inv.columns[this.dataset.i].name]=this.value;state.touched.add(state.inv.columns[this.dataset.i].name)">${opts}</select></td></tr>`;
   });
   document.getElementById("cols").innerHTML = r.columns.length ? t : "<tr><td class='hint'>No spreadsheets added.</td></tr>";
   document.getElementById("scan-out").style.display="block";
   document.getElementById("drop").style.display="none";
-  const ok = r.tables + r.images > 0;
+  const ok = r.tables + r.images + (r.documents||0) > 0;
   document.getElementById("start-btn").disabled = !ok;
-  document.getElementById("data-err").textContent = ok ? "" : "No spreadsheets or images found. Try another folder.";
+  document.getElementById("data-err").textContent = ok ? "" : "No spreadsheets, documents or images found. Try another folder.";
 };
+function selKind(el){
+  document.querySelectorAll("#kind .opt").forEach(o=>o.classList.toggle("sel", o===el));
+  state.kind = el.dataset.v;
+  document.getElementById("kind-card").style.boxShadow = "";
+  document.getElementById("data-err").textContent = "";
+  if (state.inv) document.querySelectorAll("#cols select").forEach(s=>{
+    const c = state.inv.columns[s.dataset.i];
+    if (state.touched && state.touched.has(c.name)) return;
+    const a = (state.kind === "business" ? c.action_business : c.action) || c.action;
+    s.value = a; state.actions[c.name] = a;
+  });
+}
 function clearData(){
   state.inv=null;
   document.getElementById("scan-out").style.display="none";
@@ -247,9 +268,16 @@ function selMode(el){
 }
 
 async function startRun(){
+  if(!state.kind){
+    document.getElementById("data-err").textContent = "Please choose whether this is business data or health data.";
+    document.getElementById("kind-card").style.boxShadow = "0 0 0 2px var(--red)";
+    return;
+  }
   const rows = parseInt(document.getElementById("n-rows").value,10);
   const imgs = parseInt(document.getElementById("n-imgs").value,10);
+  const docs = parseInt(document.getElementById("n-docs").value,10);
   const opts = {mode:state.mode, rows: isNaN(rows)?500:Math.max(10,rows), images: isNaN(imgs)?25:Math.max(0,imgs),
+                docs: isNaN(docs)?100:Math.max(0,docs), keep_dates: state.kind === "business",
                 ocr: document.getElementById("ocr").checked, actions: state.actions,
                 company: state.answers.contact.company};
   const r = await api().start(opts);

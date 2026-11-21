@@ -18,7 +18,8 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB = os.path.join(ROOT, "web")
 DIST = os.path.join(WEB, "dist")
-WHEELS = ["pydicom==3.0.2", "openpyxl==3.1.5", "et-xmlfile==2.0.0"]
+WHEELS = ["pydicom==3.0.2", "openpyxl==3.1.5", "et-xmlfile==2.0.0", "olefile==0.47",
+          "xlrd==2.0.2", "pypdf==7.1.1"]
 
 
 def main():

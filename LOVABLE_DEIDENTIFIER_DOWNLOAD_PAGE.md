@@ -44,8 +44,8 @@ bold label and one short line of examples:
 - **Logistics and automotive**: "Shipments, routes, service history"
 - **Software and media**: "Usage, support tickets, content"
 
-Line under the grid: "Spreadsheets (Excel, CSV) and images (JPG, PNG, TIFF, DICOM) are
-supported. Other files are skipped."
+Line under the grid: "Works with spreadsheets (Excel, CSV), documents (PDF, Word), emails
+(Outlook and .eml, including attachments), images (JPG, PNG, TIFF, DICOM) and zip files."
 
 ## 3. How it works (3 numbered cards)
 
@@ -89,8 +89,14 @@ Right: a compact table titled "What gets removed":
   and more."
 - **How long does it take?** "Usually a few minutes for a sample of 500 records per
   spreadsheet and 25 images."
-- **What files does it accept?** "Excel (.xlsx), CSV, and images in JPG, PNG, TIFF, BMP or
-  DICOM. Other files are skipped."
+- **What files does it accept?** "Excel (old and new), CSV, PDF, Word, Outlook emails (.msg)
+  and .eml with their attachments, images in JPG, PNG, TIFF, BMP or DICOM, and zip files.
+  Scanned PDFs and drawings with no text are listed for you rather than included."
+- **What happens to people in emails and documents?** "Each person becomes a label such as
+  Person 1 or Person 2, used the same way in every file, so conversations still make sense.
+  Their emails, phone numbers and addresses are removed. Company names stay."
+- **Do you keep dates?** "For business data, yes: order, project and email dates carry the
+  value. Dates of birth are always removed. For health data, every date is cut to the year."
 - **Why the questions?** "They are the first things AI companies and data buyers ask. Your
   answers help us match your data to the right buyers faster."
 - **Can I use it on my phone?** "It is designed for a computer, where your data files are."

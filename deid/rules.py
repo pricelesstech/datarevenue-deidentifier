@@ -86,6 +86,39 @@ _TEXT_TOKENS = {"note", "notes", "comment", "comments", "remark", "remarks", "me
                 "assessment", "plan", "observation", "observations"}
 
 
+# Everyday English and business words: never harvested as names from a spreadsheet name
+# column, and never erased on their own as if they were a person's name.
+COMMON_WORDS = set("""
+a about above after again against all also am an and any are as at be because been before
+being below between both but by can could did do does doing done down during each else few
+for from further had has have having he her here hers him his how i if in into is it its
+just me more most my no nor not now of off on once only or other our out over own same she
+should so some such than that the their them then there these they this those through to
+too under until up upon very was we were what when where which while who whom why will with
+would you your yours yes per via etc inc llc co corp ltd company construction contractor
+contract contracts subcontract subcontractor owner owners client project projects job jobs
+site work works new old north south east west street road avenue drive suite office
+building park state city county parish department dept division unit group team services
+service management manager engineer engineering architect design general repair repairs
+total amount date dates time day days week month year phase change order orders request
+requests report reports daily note notes item items number no each page section clause
+general supply supplies material materials labor equipment cost costs price bid bids
+schedule submittal submittals invoice payment payments pay application final letter
+document documents file files attached attachment see per approved pending complete
+completed open closed yes none na tbd various misc other info information contact
+""".split())
+
+_THING_NAME = {"project", "company", "business", "vendor", "supplier", "product", "item",
+               "file", "job", "site", "building", "model", "brand", "store", "location",
+               "facility", "plan", "program", "course", "drug", "medication", "part",
+               "material", "equipment", "task", "event", "organization", "org", "firm",
+               "practice", "sheet", "tab", "folder", "document", "account", "subcontractor",
+               "sub", "contractor", "manufacturer", "carrier", "insurer", "payer", "bank",
+               "agency", "department", "dept", "street", "city", "county", "state",
+               "country", "product", "service", "category", "class", "type", "trade",
+               "phase", "activity", "cost", "code", "field", "column", "table", "variable"}
+
+
 def classify(header: str) -> str:
     """Suggest an action for a column from its header alone. Values get a second check
     (see scan_value) whatever the action."""
@@ -101,6 +134,8 @@ def classify(header: str) -> str:
         return ZIP3
     if toks & {"age"} and not toks & _DATE_TOKENS:
         return AGE
+    if "name" in toks and toks & _THING_NAME:
+        return KEEP  # "Project Name", "Vendor Name": the name of a thing, not a person
     if toks & _NAME_TOKENS or joined in _NAME_TOKENS or (
         "patient" in toks and len(toks) == 1
     ) or toks & {"first", "last", "middle", "given", "family"} or joined in {
@@ -119,6 +154,25 @@ def classify(header: str) -> str:
     if toks & _TEXT_TOKENS:
         return TEXT
     return KEEP
+
+
+_PERSONAL_ID = {"customer", "client", "member", "patient", "employee", "account", "acct",
+                "ssn", "social", "license", "licence", "policy", "subscriber", "insured",
+                "phone", "tax", "ein", "tin", "driver", "passport", "card", "bank", "routing",
+                "user", "student", "person", "guest", "resident", "tenant", "borrower"}
+
+
+def for_business(header: str, action: str) -> str:
+    """The suggestion for business data. Two differences from health data:
+    business dates are kept (dates of birth are not), and ID-like columns that are not
+    about a person ("PO Number", "Job No", "Invoice ID") are kept instead of dropped."""
+    toks = set(_tokens(header))
+    if action == YEAR and not is_birth_header(header):
+        return KEEP
+    if action == REMOVE and toks & {"id", "number", "no", "num"} \
+            and not toks & (_REMOVE_TOKENS | _PERSONAL_ID):
+        return KEEP
+    return action
 
 
 def classify_values(header: str, values: list) -> str:
@@ -160,21 +214,72 @@ RE_TITLE_NAME = re.compile(
     r"\b(?:Dr|Mr|Mrs|Ms|Miss|Mx|Prof)\.?\s+[A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+)?"
 )
 
-# patterns that must never survive in a kept column
-SAFETY_PATTERNS = [
-    ("email", RE_EMAIL, "[EMAIL]"),
-    ("url", RE_URL, "[URL]"),
-    ("ssn", RE_SSN, "[SSN]"),
-    ("phone", RE_PHONE, "[PHONE]"),
-    ("ip", RE_IP, "[IP]"),
-    ("zip+4", RE_ZIP9, "[ZIP]"),
-    ("number like SSN/phone", RE_BARE_ID, "[NUMBER]"),
-    ("date", RE_DATE, "[DATE]"),  # Safe Harbor: no date more specific than a year
-]
-TEXT_PATTERNS = SAFETY_PATTERNS + [
-    ("long number", RE_LONGNUM, "[NUMBER]"),
-    ("titled name", RE_TITLE_NAME, "[NAME]"),
-]
+RE_EIN = re.compile(r"(?<![\d-])\d{2}-\d{7}(?![\d-])")  # US employer / tax ID
+_STREET_TYPES = (r"St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Dr|Drive|Ln|Lane|Ct|Court|"
+                 r"Hwy|Highway|Pkwy|Parkway|Way|Pl|Place|Cir|Circle|Ter|Terrace|Trl|Trail|"
+                 r"Sq|Square|Loop|Row")
+RE_STREET = re.compile(
+    r"\b\d{1,6}\s+(?:[NSEW]\.?\s+)?(?:[A-Z][A-Za-z'\-]*\.?\s+){1,4}(?:" + _STREET_TYPES +
+    r")\b\.?(?:,?\s+(?:Suite|Ste|Apt|Unit|#)\.?\s*[\w\-]+)?")
+RE_POBOX = re.compile(r"\bP\.?\s?O\.?\s+Box\s+\d+\b", re.I)
+_STATES = ("AL|AK|AZ|AR|CA|CO|CT|DE|DC|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|"
+           "MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY")
+RE_STATE_ZIP = re.compile(r"\b(" + _STATES + r")\.?,?\s+\d{5}(?:-\d{4})?\b")
+
+# ── mode ──
+# HEALTH (default, HIPAA Safe Harbor): no date more specific than a year anywhere.
+# BUSINESS: business dates (orders, reports, meetings) keep their value; dates of birth are
+# still cut to the year and every other identifier is removed the same way.
+KEEP_DATES = False
+
+
+def set_mode(keep_dates: bool) -> None:
+    global KEEP_DATES
+    KEEP_DATES = bool(keep_dates)
+
+
+RE_BIRTH_DATE = re.compile(
+    r"(?i)\b(?:dob|d\.o\.b\.?|date\s+of\s+birth|birth\s*date|born(?:\s+on)?)\s*[:#\-]?\s*"
+    r"(?:" + RE_DATE.pattern + r")", re.I)
+
+
+def safety_patterns():
+    """Patterns that must never survive in a kept column or a document."""
+    p = [
+        ("date of birth", RE_BIRTH_DATE, "[DATE OF BIRTH]"),
+        ("email", RE_EMAIL, "[EMAIL]"),
+        ("url", RE_URL, "[URL]"),
+        ("ssn", RE_SSN, "[SSN]"),
+        ("tax ID", RE_EIN, "[TAX ID]"),
+        ("phone", RE_PHONE, "[PHONE]"),
+        ("ip", RE_IP, "[IP]"),
+        ("zip+4", RE_ZIP9, "[ZIP]"),
+        ("state + ZIP", RE_STATE_ZIP, r"\1 [ZIP]"),
+        ("street address", RE_STREET, "[ADDRESS]"),
+        ("PO box", RE_POBOX, "[ADDRESS]"),
+        ("number like SSN/phone", RE_BARE_ID, "[NUMBER]"),
+    ]
+    if not KEEP_DATES:
+        p.append(("date", RE_DATE, "[DATE]"))  # Safe Harbor: no date more specific than a year
+    return p
+
+
+def text_patterns():
+    return safety_patterns() + [
+        ("long number", RE_LONGNUM, "[NUMBER]"),
+        ("titled name", RE_TITLE_NAME, "[NAME]"),
+    ]
+
+
+# kept for callers that read them as constants (health mode values)
+SAFETY_PATTERNS = safety_patterns()
+TEXT_PATTERNS = text_patterns()
+
+_BIRTH = re.compile(r"(?i)\b(dob|d\.o\.b\.?|birth|born|birthday|birthdate)\b")
+
+
+def is_birth_header(header: str) -> bool:
+    return bool(set(_tokens(header)) & {"dob", "birth", "birthday", "birthdate", "born"})
 
 
 def scrub_patterns(value: str, patterns, hits: dict) -> str:

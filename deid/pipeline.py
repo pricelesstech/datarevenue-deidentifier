@@ -18,12 +18,14 @@ import threading
 from collections import Counter
 from dataclasses import dataclass, field
 
-from . import __version__, images, rules, tables
+from . import __version__, documents, images, rules, tables
 from .crosswalk import Crosswalk
+from .people import PeopleBook
 
 SHARE_DIR = "SHARE_THIS_deidentified"
 PRIVATE_DIR = "KEEP_PRIVATE_do_not_share"
 _SKIP_NAMES = {"thumbs.db", "desktop.ini", ".ds_store", "icon\r"}
+ARCHIVE_EXTS = {".zip"}
 
 
 @dataclass
@@ -31,8 +33,13 @@ class Inventory:
     roots: list = field(default_factory=list)
     tables: list = field(default_factory=list)
     images: list = field(default_factory=list)  # (path, kind)
+    documents: list = field(default_factory=list)
+    archives: list = field(default_factory=list)
     other: list = field(default_factory=list)
     headers: dict = field(default_factory=dict)
+    display: dict = field(default_factory=dict)  # path -> path shown (for unzipped files)
+    temp_dirs: list = field(default_factory=list)
+    notes: list = field(default_factory=list)  # (path, note) e.g. archive size limit hit
 
     @property
     def input_dir(self) -> str:  # backward compatible single-root name
@@ -46,10 +53,70 @@ def _add_file(inv: Inventory, p: str) -> None:
     ext = os.path.splitext(name)[1].lower()
     if ext in tables.TABLE_EXTS:
         inv.tables.append(p)
+    elif ext in documents.DOC_EXTS:
+        inv.documents.append(p)
+    elif ext in ARCHIVE_EXTS:
+        inv.archives.append(p)
     elif ext in images.IMAGE_EXTS or images.is_dicom(p):
         inv.images.append((p, "dicom" if images.is_dicom(p) else "image"))
     else:
         inv.other.append(p)
+
+
+def _safe_parts(member: str) -> list[str]:
+    """Zip member name -> safe path parts (no absolute paths, drives or '..')."""
+    parts = []
+    for part in member.replace("\\", "/").split("/"):
+        part = part.strip()
+        if part in ("", ".", "..") or ":" in part:
+            continue
+        parts.append(part)
+    return parts
+
+
+def expand_archive(inv: Inventory, path: str, dest: str, shown: str, depth: int = 0,
+                   budget: list | None = None) -> None:
+    """Unzip into dest (safely) and add what is inside to the inventory. Zips inside zips
+    are opened too, up to 3 levels. budget = [bytes left] caps the total unzipped size."""
+    import zipfile
+
+    budget = budget if budget is not None else [20 * 1024 ** 3]
+    try:
+        z = zipfile.ZipFile(path)
+    except (zipfile.BadZipFile, OSError) as e:
+        inv.other.append(path)
+        inv.notes.append((path, f"could not open zip ({type(e).__name__})"))
+        return
+    with z:
+        for info in z.infolist():
+            if info.is_dir() or info.flag_bits & 0x1:  # folders, password-protected files
+                if info.flag_bits & 0x1:
+                    inv.notes.append((path, "password-protected files inside were skipped"))
+                continue
+            parts = _safe_parts(info.filename)
+            if not parts:
+                continue
+            if info.file_size > budget[0]:
+                inv.notes.append((path, "size limit reached; the rest of this zip was skipped"))
+                break
+            target = os.path.join(dest, *parts)
+            real = os.path.realpath(target)
+            if not real.startswith(os.path.realpath(dest) + os.sep):
+                continue
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with z.open(info) as src, open(target, "wb") as out:
+                while True:
+                    chunk = src.read(1 << 20)
+                    if not chunk:
+                        break
+                    out.write(chunk)
+            budget[0] -= info.file_size
+            inv.display[target] = shown + "/" + "/".join(parts)
+            if os.path.splitext(target)[1].lower() in ARCHIVE_EXTS and depth < 3:
+                sub = target + "_unzipped"
+                expand_archive(inv, target, sub, inv.display[target], depth + 1, budget)
+            else:
+                _add_file(inv, target)
 
 
 def scan(paths, output_dir: str | None = None) -> Inventory:
@@ -75,8 +142,36 @@ def scan(paths, output_dir: str | None = None) -> Inventory:
                 if fp not in seen:
                     seen.add(fp)
                     _add_file(inv, fp)
+    if inv.archives:
+        import tempfile
+
+        budget = [20 * 1024 ** 3]
+        for a in list(inv.archives):
+            tmp = tempfile.mkdtemp(prefix="deid_unzip_")
+            inv.temp_dirs.append(tmp)
+            expand_archive(inv, a, tmp, _shown(inv, a), budget=budget)
     inv.headers = tables.scan_headers(inv.tables)
     return inv
+
+
+def _shown(inv: Inventory, p: str) -> str:
+    """The path to show for a file: relative to what was added, or inside its zip."""
+    if p in inv.display:
+        return inv.display[p]
+    for r in inv.roots:
+        if p == r:
+            return os.path.basename(p)
+        if p.startswith(r.rstrip("/\\") + os.sep) or p.startswith(r.rstrip("/") + "/"):
+            return os.path.basename(r) + "/" + os.path.relpath(p, r).replace("\\", "/")
+    return os.path.basename(p)
+
+
+def cleanup(inv: Inventory) -> None:
+    import shutil
+
+    for d in inv.temp_dirs:
+        shutil.rmtree(d, ignore_errors=True)
+    inv.temp_dirs.clear()
 
 
 def _link_code(path: str, crosswalk: Crosswalk) -> str | None:
@@ -109,8 +204,23 @@ class Run:
                  share_dir: str | None = None, private_dir: str | None = None,
                  output_dir: str | None = None, sample_rows: int | None = None,
                  sample_images: int | None = None, seed: int | None = None,
-                 progress=None, cancel: threading.Event | None = None):
+                 progress=None, cancel: threading.Event | None = None,
+                 keep_dates: bool = False, sample_docs: int | None = None):
+        rules.set_mode(keep_dates)
+        self.keep_dates = keep_dates
+        if keep_dates:  # business data: business dates keep their value, birth dates do not
+            actions = {h: (rules.KEEP if a == rules.YEAR and not rules.is_birth_header(h)
+                           else a) for h, a in actions.items()}
         self.inv, self.actions, self.ocr = inv, actions, ocr
+        self.sample_docs = sample_docs
+        self.people = PeopleBook()
+        self.names: set[str] = set()
+        self._docs: dict = {}       # path -> extracted Doc (pass 1)
+        self.chosen_docs: list = []
+        self.doc_stats = Counter()
+        self.doc_kinds = Counter()
+        self.doc_years: list = []
+        self.doc_excerpts: list = []
         self.progress = progress or (lambda *_a, **_k: None)
         self.cancel = cancel or threading.Event()
         self.share = share_dir or os.path.join(output_dir, SHARE_DIR)
@@ -132,9 +242,37 @@ class Run:
         self.text_log: list = []
         self.done_images = 0
 
+    # ── documents, pass 1: read them and learn every person they name ──
+    def choose_documents(self) -> list:
+        chosen = list(self.inv.documents)
+        if self.sample_docs is not None and len(chosen) > self.sample_docs:
+            chosen = sorted(random.Random(f"{self.seed}:docs").sample(chosen, self.sample_docs))
+        self.chosen_docs = chosen
+        return chosen
+
+    def learn_people(self) -> None:
+        if not self.chosen_docs and self.inv.documents:
+            self.choose_documents()
+        n = len(self.chosen_docs)
+        for i, p in enumerate(self.chosen_docs, 1):
+            if self.cancel.is_set():
+                break
+            self.progress(f"Reading document {i} of {n}", i, max(n, 1))
+            try:
+                d = documents.extract(p)
+                documents.learn(d, self.people)
+                self._docs[p] = d
+            except Exception as e:  # noqa: BLE001
+                self._docs[p] = f"{type(e).__name__}: {str(e)[:150]}"
+
     def tables(self) -> None:
         self.progress("Reading spreadsheets", 0, 1)
         names = tables.collect(self.inv.tables, self.actions, self.cw)
+        # people found in documents are erased from spreadsheet text too, and names from
+        # spreadsheet name columns are erased from documents
+        self.people.extra_tokens |= names
+        names = names | {t for t in self.people.tokens}
+        self.names = names
         used: set[str] = set()
         n_tables = len(self.inv.tables)
         for n, p in enumerate(self.inv.tables, 1):
@@ -150,6 +288,73 @@ class Run:
             else:
                 self.file_log.append((p, r.output, "ok", f"{r.rows} of {r.source_rows} rows"))
         self.cw.save()
+
+    # ── documents, pass 2: write the de-identified text versions ──
+    def _out_name(self, p: str, used: set) -> str:
+        shown = _shown(self.inv, p)
+        parts = shown.split("/")
+        clean = []
+        for idx, part in enumerate(parts):
+            last = idx == len(parts) - 1
+            stem, ext = os.path.splitext(part) if last else (part, "")
+            s = self.people.scrub(stem)
+            s = rules.scrub_patterns(s, rules.text_patterns(), {})
+            s = re.sub(r"[\[\]]", "", s)
+            s = re.sub(r'[<>:"/\\|?*\x00-\x1f]+', "_", s).strip(" .") or "document"
+            clean.append(s[:80] + (ext.replace(".", "_") if last else ""))
+        rel = os.path.join(*clean) + ".txt"
+        base, n = rel, 2
+        while rel.lower() in used:
+            rel = base[:-4] + f"_{n}.txt"
+            n += 1
+        used.add(rel.lower())
+        return rel
+
+    def documents(self) -> None:
+        if not self.chosen_docs:
+            return
+        d_dir = os.path.join(self.share, "documents")
+        used: set = set()
+        n = len(self.chosen_docs)
+        for i, p in enumerate(self.chosen_docs, 1):
+            if self.cancel.is_set():
+                break
+            self.progress(f"Cleaning document {i} of {n}", i, max(n, 1))
+            d = self._docs.get(p)
+            if d is None:
+                continue
+            if isinstance(d, str):
+                self.review.append((p, f"document could not be read: {d}"))
+                self.file_log.append((p, "", "review", d))
+                self.doc_stats["unreadable"] += 1
+                continue
+            self.doc_kinds[d.kind] += 1
+            if d.scanned or (not d.text.strip() and not d.attachments):
+                self.review.append((p, d.note or "no readable text: not included"))
+                self.file_log.append((p, "", "review", d.note or "no text"))
+                self.doc_stats["no text"] += 1
+                continue
+            hits: dict = {}
+            rel = self._out_name(p, used)
+            title = os.path.basename(rel)[:-4]
+            text = documents.render(d, self.people, self.names, self.keep_dates, hits, title)
+            out = os.path.join(d_dir, rel)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out, "w", encoding="utf-8") as f:
+                f.write(text)
+            self.doc_stats["written"] += 1
+            self.doc_stats["words"] += documents.word_count(text)
+            self.doc_stats["pages"] += d.pages
+            self.doc_stats["emails"] += d.kind == "Email"
+            self.doc_stats["attachments read"] += sum(1 for a in d.attachments if a[1])
+            for k, v in hits.items():
+                self.doc_stats[f"removed: {k}"] += v
+            if d.date:
+                self.doc_years.append(d.date.year)
+            if len(self.doc_excerpts) < 3 and documents.word_count(d.text) > 40:
+                self.doc_excerpts.append((title, d.kind, text[:900]))
+            self.file_log.append((p, out, "ok", f"{d.kind}; {sum(hits.values())} removed"))
+        self._docs.clear()
 
     def choose_images(self) -> list:
         chosen = list(self.inv.images)
@@ -198,9 +403,13 @@ class Run:
 
     def finish(self) -> dict:
         for p in self.inv.other:
-            self.review.append((p, "not a spreadsheet or image; not copied. "
+            self.review.append((p, "not a supported file type; not copied. "
                                    "Review by hand if needed."))
             self.file_log.append((p, "", "skipped", "unsupported file type"))
+        for p, note in self.inv.notes:
+            self.review.append((p, note))
+        if len(self.people):
+            self.people.save(self.private)
 
         def _w(name, header, rows):
             with open(os.path.join(self.private, name), "w", newline="",
@@ -241,9 +450,31 @@ class Run:
                 for r in tr if not r.error
             ],
             "image_profile": _image_profile(self.inv, self.img_info),
+            "keep_dates": self.keep_dates,
+            "documents_total": len(self.inv.documents),
+            "documents_written": self.doc_stats["written"],
+            "document_profile": {
+                "total_by_type": dict(Counter(
+                    os.path.splitext(p)[1].lstrip(".").upper() for p in self.inv.documents
+                ).most_common()),
+                "kinds_in_sample": dict(self.doc_kinds.most_common()),
+                "written": self.doc_stats["written"],
+                "emails": self.doc_stats["emails"],
+                "attachments_read": self.doc_stats["attachments read"],
+                "words": self.doc_stats["words"],
+                "pages": self.doc_stats["pages"],
+                "no_text": self.doc_stats["no text"],
+                "unreadable": self.doc_stats["unreadable"],
+                "people": len(self.people),
+                "years": [min(self.doc_years), max(self.doc_years)] if self.doc_years else None,
+                "removed": {k[9:]: v for k, v in self.doc_stats.items()
+                            if k.startswith("removed: ")},
+                "excerpts": self.doc_excerpts,
+            },
         }
         _report(os.path.join(self.share, "DEIDENTIFICATION_REPORT.txt"), summary, tr,
                 self.ocr, self.started)
+        cleanup(self.inv)
         return summary
 
 
@@ -251,11 +482,16 @@ def run(inv: Inventory, output_dir: str | None, actions: dict, ocr: bool = True,
         workers: int | None = None, progress=None, cancel: threading.Event | None = None,
         sample_rows: int | None = None, sample_images: int | None = None,
         share_dir: str | None = None, private_dir: str | None = None,
-        seed: int | None = None) -> dict:
+        seed: int | None = None, keep_dates: bool = False,
+        sample_docs: int | None = None) -> dict:
     r = Run(inv, actions, ocr=ocr, share_dir=share_dir, private_dir=private_dir,
             output_dir=output_dir, sample_rows=sample_rows, sample_images=sample_images,
-            seed=seed, progress=progress, cancel=cancel)
+            seed=seed, progress=progress, cancel=cancel, keep_dates=keep_dates,
+            sample_docs=sample_docs)
+    r.choose_documents()
+    r.learn_people()
     r.tables()
+    r.documents()
     jobs = r.image_jobs(r.choose_images())
     cancel = r.cancel
     if jobs and not cancel.is_set():
@@ -320,6 +556,12 @@ def _report(path, s, table_results, ocr, started):
     L.append(f"Prepared: {started:%Y-%m-%d %H:%M}   Tool: Data Revenue De-Identifier "
              f"v{__version__} (offline)")
     L.append("Method: HIPAA Safe Harbor, 45 CFR 164.514(b)(2)")
+    if s.get("keep_dates"):
+        L.append("DATA TYPE: business data. Business dates (orders, reports, emails) were")
+        L.append("kept; dates of birth were reduced to the year. Every other identifier was")
+        L.append("removed as Safe Harbor requires.")
+    else:
+        L.append("DATA TYPE: health data (strict). No date more specific than the year.")
     if s["cancelled"]:
         L.append("STATUS: STOPPED BEFORE FINISHING. This output is incomplete.")
     if s["sampling"]:
@@ -328,6 +570,12 @@ def _report(path, s, table_results, ocr, started):
     L.append("SUMMARY")
     L.append(f"  Spreadsheets ...................... {s['tables']} "
              f"({s['table_rows']:,} rows written of {s['table_source_rows']:,})")
+    dp = s.get("document_profile") or {}
+    if s.get("documents_total"):
+        L.append(f"  Documents and emails .............. {s['documents_written']:,} written "
+                 f"(of {s['documents_total']:,} found)")
+        L.append(f"  People replaced with labels ....... {dp.get('people', 0):,}")
+        L.append(f"  Documents with no text layer ...... {dp.get('no_text', 0):,} (not included)")
     L.append(f"  Images de-identified .............. {s['images_ok']:,} "
              f"(of {s['images_total']:,} found)")
     L.append(f"  Images with printed text removed .. {s['images_with_text']:,}")
@@ -359,7 +607,17 @@ def _report(path, s, table_results, ocr, started):
     L.append("  - Customer, patient, member or record IDs: replaced with random study codes")
     L.append("    (P + 8 digits) not derived from the original number. The code key is")
     L.append("    held only by the data owner and is not included here.")
-    L.append("  - Dates: year only. Birth years for people 90 or older are grouped.")
+    if s.get("keep_dates"):
+        L.append("  - Dates of birth: year only. Business dates kept.")
+    else:
+        L.append("  - Dates: year only. Birth years for people 90 or older are grouped.")
+    if s.get("documents_total"):
+        L.append("  - Documents and emails: only a text version is included (no original")
+        L.append("    files, so no hidden authors, comments or tracked changes). People are")
+        L.append("    replaced with labels (Person 1, Person 2) used the same way in every")
+        L.append("    document; emails, phone numbers, street addresses, tax IDs and long")
+        L.append("    numbers are replaced. Company names are kept. PDFs that are scans or")
+        L.append("    drawings with no text layer are not included.")
     L.append("  - Ages over 89: shown as 90+.")
     L.append("  - ZIP codes: first 3 digits; low-population areas shown as 000.")
     L.append("  - Free-text columns: names, dates, phone numbers, emails and long numbers")

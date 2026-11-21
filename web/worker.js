@@ -7,9 +7,11 @@ const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/";
 const ORT = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/";
 importScripts(PYODIDE + "pyodide.js", ORT + "ort.min.js", "ocr.js");
 
-const TABLE_EXT = new Set(["csv", "xlsx", "xlsm", "txt", "tsv"]);
+const TABLE_EXT = new Set(["csv", "xlsx", "xlsm", "xls", "txt", "tsv"]);
 const IMAGE_EXT = new Set(["jpg", "jpeg", "png", "tif", "tiff", "bmp"]);
 const DICOM_EXT = new Set(["dcm", "dicom"]);
+const DOC_EXT = new Set(["msg", "eml", "pdf", "docx", "docm", "doc", "odt", "pptx", "rtf", "htm", "html"]);
+const ARCHIVE_EXT = new Set(["zip"]);
 const SKIP = new Set(["thumbs.db", "desktop.ini", ".ds_store"]);
 
 let py = null, web = null, files = new Map();
@@ -26,7 +28,7 @@ const ready = (async () => {
   await py.loadPackage(["numpy", "pillow", "micropip"]);
   const manifest = await (await fetch(here("py/manifest.json"))).json();
   const micropip = py.pyimport("micropip");
-  await micropip.install(manifest.wheels.map(here));
+  await micropip.install(manifest.wheels.map(here), {deps: false});
   py.FS.mkdirTree("/app/deid/ui");
   for (const f of manifest.files) {
     const buf = new Uint8Array(await (await fetch(here("py/" + f))).arrayBuffer());
@@ -49,6 +51,8 @@ async function kindOf(name, file) {
   if (base.startsWith("~$") || base.startsWith("._") || base.startsWith(".") || SKIP.has(base)) return null;
   const ext = base.includes(".") ? base.split(".").pop() : "";
   if (TABLE_EXT.has(ext)) return "table";
+  if (DOC_EXT.has(ext)) return "document";
+  if (ARCHIVE_EXT.has(ext)) return "archive";
   if (DICOM_EXT.has(ext)) return "dicom";
   if (IMAGE_EXT.has(ext)) return "image";
   if (file.size > 132) {
@@ -78,7 +82,7 @@ const handlers = {
       let p = safePath(path);
       while (files.has(p)) p = p.replace(/(\.[^./]*)?$/, "_" + n + "$1");
       files.set(p, file);
-      if (kind === "table") writeFile(p, await file.arrayBuffer());
+      if (kind === "table" || kind === "archive") writeFile(p, await file.arrayBuffer());
       listing.push({path: p, kind});
     }
     return JSON.parse(web.scan(JSON.stringify(listing)));
@@ -86,9 +90,11 @@ const handlers = {
 
   async start(opts) {
     await ready;
-    post({type: "progress", msg: "Reading spreadsheets", n: 0, total: 1});
+    post({type: "progress", msg: "Getting your files ready", n: 0, total: 1});
     const chosen = JSON.parse(web.start(JSON.stringify(opts)));
-    for (const p of chosen) writeFile(p, await files.get(p).arrayBuffer());
+    // files from inside zips are already in memory; the rest are copied in now
+    for (const p of chosen) { const f = files.get(p); if (f) writeFile(p, await f.arrayBuffer()); }
+    web.prepare();
     const total = web.make_jobs();
     for (let i = 0; i < total; i++) {
       post({type: "progress", msg: `Checking image ${i + 1} of ${total} for printed text`, n: i, total});

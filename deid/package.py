@@ -146,6 +146,9 @@ def build_html(summary: dict, answers: dict, cat: dict, created: _dt.datetime) -
                     years.update([c["min"], c["max"]])
     if ip.get("years"):
         years.update(ip["years"])
+    dp = summary.get("document_profile") or {}
+    if dp.get("years"):
+        years.update(dp["years"])
     span = f"{min(years)} to {max(years)}" if years else "n/a"
 
     H = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'>"
@@ -156,14 +159,21 @@ def build_html(summary: dict, answers: dict, cat: dict, created: _dt.datetime) -
              f"All personal identifiers removed (HIPAA Safe Harbor method).</p>"
              f"</div></header><div class='wrap'>")
     H.append("<h2>At a glance</h2><div class='cards'>")
-    for big, small in [
-        (f"{summary['table_source_rows']:,}", "records in the full data set"),
-        (f"{summary['table_rows']:,}", "records in this sample"),
-        (f"{fields:,}", "fields (columns)"),
-        (f"{summary['images_total']:,}", "images in the full data set"),
-        (f"{summary['images_ok']:,}", "images in this sample"),
-        (span, "years covered"),
-    ]:
+    glance = [
+        (f"{summary['table_source_rows']:,}", "spreadsheet records in the full data set"),
+        (f"{summary['table_rows']:,}", "spreadsheet records in this sample"),
+        (f"{fields:,}", "spreadsheet fields"),
+    ]
+    if summary.get("documents_total"):
+        glance += [(f"{summary['documents_total']:,}", "documents and emails in the full set"),
+                   (f"{summary.get('documents_written', 0):,}", "documents and emails in this sample")]
+    if summary["images_total"]:
+        glance += [(f"{summary['images_total']:,}", "images in the full data set"),
+                   (f"{summary['images_ok']:,}", "images in this sample")]
+    glance.append((span, "years covered"))
+    for big, small in glance:
+        if big in ("0", "") and "years" not in small:
+            continue
         H.append(f"<div class='card'><b>{_e(big)}</b><span>{_e(small)}</span></div>")
     H.append("</div>")
 
@@ -204,6 +214,33 @@ def build_html(summary: dict, answers: dict, cat: dict, created: _dt.datetime) -
                          f"</div></td><td>{_e(c.get('distinct', ''))}</td><td>{detail}</td></tr>")
             H.append("</table>")
 
+    if summary.get("documents_total"):
+        H.append("<h2>Documents and emails</h2><table>")
+        removed = dp.get("removed") or {}
+        for k, v in [
+            ("File types (full data set)", ", ".join(f"{a}: {b:,}" for a, b in
+                                                     (dp.get("total_by_type") or {}).items())),
+            ("In this sample", ", ".join(f"{a}: {b:,}" for a, b in
+                                         (dp.get("kinds_in_sample") or {}).items()) or "n/a"),
+            ("Emails in sample", f"{dp.get('emails', 0):,} "
+                                 f"(attachments read: {dp.get('attachments_read', 0):,})"),
+            ("Words of text in sample", f"{dp.get('words', 0):,}"),
+            ("People replaced with labels", f"{dp.get('people', 0):,} (Person 1, Person 2, ... "
+                                            f"used the same way in every document)"),
+            ("Personal details removed", ", ".join(f"{b:,} {a}" for a, b in sorted(
+                removed.items(), key=lambda kv: -kv[1])) or "none found"),
+            ("Scans or drawings with no text layer", f"{dp.get('no_text', 0):,} "
+                                                     f"(not included)"),
+        ]:
+            H.append(f"<tr><td class='mute' style='width:45%'>{_e(k)}</td><td>{_e(v)}</td></tr>")
+        H.append("</table>")
+        for title, kind, text in dp.get("excerpts") or []:
+            H.append(f"<h2 style='font-size:16px'>Excerpt: {_e(title)} "
+                     f"<span class='tag'>{_e(kind)}</span></h2>"
+                     f"<pre style='white-space:pre-wrap;background:#fff;border:1px solid "
+                     f"var(--line);border-radius:10px;padding:14px;font-size:13px'>"
+                     f"{_e(text)}{'...' if len(text) >= 900 else ''}</pre>")
+
     if summary["images_total"]:
         H.append("<h2>Images</h2><table>")
         for k, v in [
@@ -229,8 +266,11 @@ def build_html(summary: dict, answers: dict, cat: dict, created: _dt.datetime) -
              "owner's own computer; the original files were never uploaded. Names, "
              "addresses, phone "
              "numbers, emails and ID numbers were removed; customer, patient or account "
-             "numbers were replaced with random study codes; dates were reduced to the year; "
-             "ZIP codes to 3 digits; text printed on images was found and blacked out; all "
+             "numbers were replaced with random study codes; people in documents and emails "
+             "were replaced with labels (Person 1, Person 2); "
+             + ("business dates were kept and dates of birth cut to the year; "
+                if summary.get("keep_dates") else "dates were reduced to the year; ")
+             + "ZIP codes to 3 digits; text printed on images was found and blacked out; all "
              "image metadata was removed. The key that links study codes back to real people "
              "stays with the data owner. Full details are in DEIDENTIFICATION_REPORT.txt.</div>")
     H.append(f"<footer>Data Revenue De-Identifier v{_e(__version__)}</footer></div></body></html>")
@@ -251,6 +291,8 @@ def build_package(summary: dict, answers: dict, out_base: str) -> dict:
         "answers": answers,
         "summary": {k: v for k, v in summary.items()
                     if k not in ("share_dir", "private_dir")},
+        "mode": "business (business dates kept)" if summary.get("keep_dates")
+        else "health (dates cut to the year)",
     }
     with open(os.path.join(share, "data_summary.json"), "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=1, default=str)

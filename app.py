@@ -92,6 +92,8 @@ class Api:
         return list(r) if r else []
 
     def clear(self):
+        if self._inv is not None:
+            pipeline.cleanup(self._inv)
         self._paths, self._inv = [], None
 
     def scan(self, paths):
@@ -99,14 +101,19 @@ class Api:
             for p in paths or []:
                 if p and p not in self._paths:
                     self._paths.append(p)
+            if self._inv is not None:
+                pipeline.cleanup(self._inv)  # unzipped copies from the previous scan
             inv = pipeline.scan(self._paths, self._base)
             self._inv = inv
             return {
                 "tables": len(inv.tables),
                 "images": len(inv.images),
                 "dicom": sum(1 for _p, k in inv.images if k == "dicom"),
+                "documents": len(inv.documents),
+                "archives": len(inv.archives),
                 "other": len(inv.other),
-                "columns": [{"name": h, "action": d["action"]}
+                "columns": [{"name": h, "action": d["action"],
+                             "action_business": d["action_business"]}
                             for h, d in sorted(inv.headers.items(), key=lambda kv: kv[0].lower())],
                 "labels": [[a, rules.ACTION_LABELS[a]] for a in rules.ACTIONS],
             }
@@ -145,6 +152,8 @@ class Api:
                     cancel=self._cancel,
                     sample_rows=int(opts.get("rows", 500)) if sample else None,
                     sample_images=int(opts.get("images", 25)) if sample else None,
+                    sample_docs=int(opts.get("docs", 100)) if sample else None,
+                    keep_dates=bool(opts.get("keep_dates", False)),
                     share_dir=share, private_dir=self._private)
                 self._status["done"] = True
             except Exception as e:  # noqa: BLE001
@@ -184,7 +193,7 @@ def _cli(src: str, out: str) -> None:
     """Headless run for testing a packaged build. Writes <out>/cli_summary.json."""
     inv = pipeline.scan(src, out)
     s = pipeline.run(inv, out, {h: d["action"] for h, d in inv.headers.items()}, ocr=True,
-                     sample_rows=50, sample_images=10)
+                     sample_rows=50, sample_images=10, sample_docs=50)
     answers = {"contact": {"company": "CLI Test"}, "datasets": [{"name": "test"}],
                "company": {}}
     s["package"] = package.build_package(s, answers, out)

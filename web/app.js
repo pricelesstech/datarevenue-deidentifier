@@ -100,26 +100,49 @@ function onScanned(r) {
   $("scan-busy").style.display = "none";
   state.inv = r;
   const pl = (n, one, many) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
-  let h = `<span class="chip"><b>${pl(r.tables, "spreadsheet", "spreadsheets")}</b></span><span class="chip"><b>${pl(r.images, "image", "images")}</b></span>`;
+  let h = `<span class="chip"><b>${pl(r.tables, "spreadsheet", "spreadsheets")}</b></span><span class="chip"><b>${pl(r.documents || 0, "document or email", "documents and emails")}</b></span><span class="chip"><b>${pl(r.images, "image", "images")}</b></span>`;
   if (r.dicom) h += `<span class="chip"><b>${r.dicom.toLocaleString()}</b> of them DICOM</span>`;
-  if (r.other) h += `<span class="chip">${pl(r.other, "other file", "other files")} (like PDFs) will be skipped</span>`;
+  if (r.archives) h += `<span class="chip">${pl(r.archives, "zip file", "zip files")} opened</span>`;
+  if (r.other) h += `<span class="chip">${pl(r.other, "other file", "other files")} will be skipped</span>`;
   h += `<button class="btn link" onclick="clearData()">Start over</button>`;
   $("chips").innerHTML = h;
   state.actions = {};
+  state.touched = new Set();
+  const suggest = (c) => (state.kind === "business" ? c.action_business : c.action) || c.action;
   let t = "<tr><th>Column</th><th>What happens</th></tr>";
   r.columns.forEach((c, i) => {
-    state.actions[c.name] = c.action;
-    const opts = r.labels.map(([k, l]) => `<option value="${k}" ${k === c.action ? "selected" : ""}>${esc(l)}</option>`).join("");
+    const a = suggest(c);
+    state.actions[c.name] = a;
+    const opts = r.labels.map(([k, l]) => `<option value="${k}" ${k === a ? "selected" : ""}>${esc(l)}</option>`).join("");
     t += `<tr><td>${esc(c.name || "(blank)")}</td><td><select data-i="${i}">${opts}</select></td></tr>`;
   });
   $("cols").innerHTML = r.columns.length ? t : "<tr><td class='hint'>No spreadsheets added.</td></tr>";
-  $("cols").querySelectorAll("select").forEach((s) => s.addEventListener("change", () => { state.actions[state.inv.columns[s.dataset.i].name] = s.value; }));
+  $("cols").querySelectorAll("select").forEach((s) => s.addEventListener("change", () => {
+    const name = state.inv.columns[s.dataset.i].name;
+    state.actions[name] = s.value; state.touched.add(name);
+  }));
   $("scan-out").style.display = "block";
   $("drop").style.display = "none";
   refreshStart();
 }
+function selKind(el) {
+  document.querySelectorAll("#kind .opt").forEach((o) => o.classList.toggle("sel", o === el));
+  state.kind = el.dataset.v;
+  $("kind-card").style.boxShadow = "";
+  // re-suggest column handling for this kind of data, except columns the client changed
+  if (state.inv) {
+    $("cols").querySelectorAll("select").forEach((s) => {
+      const c = state.inv.columns[s.dataset.i];
+      if (state.touched && state.touched.has(c.name)) return;
+      const a = (state.kind === "business" ? c.action_business : c.action) || c.action;
+      s.value = a; state.actions[c.name] = a;
+    });
+  }
+  $("data-err").textContent = "";
+  refreshStart();
+}
 function refreshStart() {
-  const ok = state.inv && state.inv.tables + state.inv.images > 0;
+  const ok = state.inv && state.inv.tables + state.inv.images + (state.inv.documents || 0) > 0;
   $("start-btn").disabled = !(ok && state.ready);
   if (state.inv && !ok) $("data-err").textContent = "No spreadsheets or images found. Try another folder.";
 }
@@ -141,9 +164,16 @@ function showProgress(msg, n, total) {
 }
 
 async function startRun() {
-  const rows = parseInt($("n-rows").value, 10), imgs = parseInt($("n-imgs").value, 10);
+  if (!state.kind) {
+    $("data-err").textContent = "Please choose whether this is business data or health data.";
+    $("kind-card").style.boxShadow = "0 0 0 2px var(--red)";
+    $("kind-card").scrollIntoView({behavior: "smooth", block: "center"});
+    return;
+  }
+  const rows = parseInt($("n-rows").value, 10), imgs = parseInt($("n-imgs").value, 10), docs = parseInt($("n-docs").value, 10);
   const opts = {rows: isNaN(rows) ? 500 : Math.max(10, rows), images: isNaN(imgs) ? 25 : Math.min(200, Math.max(0, imgs)),
-                ocr: $("ocr").checked, actions: state.actions};
+                docs: isNaN(docs) ? 100 : Math.min(1000, Math.max(0, docs)),
+                keep_dates: state.kind === "business", ocr: $("ocr").checked, actions: state.actions};
   buildQuestions();
   go("questions");
   state.runDone = false;
@@ -202,7 +232,7 @@ async function finish() {
     $("view-html").href = URL.createObjectURL(new Blob([r.html], {type: "text/html"}));
     if (r.key) {
       $("dl-key").href = URL.createObjectURL(new Blob([r.key], {type: "text/csv"}));
-      $("dl-key").download = "PRIVATE_study_code_key_" + r.name.replace(/^DataRevenue_Sample_/, "").replace(/\.zip$/, "") + ".csv";
+      $("dl-key").download = "PRIVATE_key_" + r.name.replace(/^DataRevenue_Sample_/, "").replace(/\.zip$/, "") + ".csv";
     } else { $("key-box").style.display = "none"; }
     $("zip-name").textContent = r.name;
     $("zip-meta").textContent = r.size_mb + " MB";

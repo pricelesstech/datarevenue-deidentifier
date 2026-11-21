@@ -35,16 +35,31 @@ def scan(listing_json: str) -> str:
     files are already written to the file system; image files are written later, only
     for the ones chosen for the sample."""
     inv = pipeline.Inventory(roots=[IN_ROOT])
+    archives = []
     for it in json.loads(listing_json):
         k, p = it["kind"], it["path"]
+        inv.display[p] = p[len(IN_ROOT) + 1:]
         if k == "table":
             inv.tables.append(p)
+        elif k == "document":
+            inv.documents.append(p)
+        elif k == "archive":
+            archives.append(p)
         elif k in ("dicom", "image"):
             inv.images.append((p, k))
         else:
             inv.other.append(p)
+    # zips were written by the page; open them here (inside the browser's memory)
+    budget = [1536 * 1024 ** 2]
+    for a in archives:
+        pipeline.expand_archive(inv, a, a + "_unzipped", inv.display[a], budget=budget)
+        try:
+            os.remove(a)
+        except OSError:
+            pass
     inv.tables.sort()
     inv.images.sort()
+    inv.documents.sort()
     inv.headers = tables.scan_headers(inv.tables)
     R.clear()
     R["inv"] = inv
@@ -52,16 +67,18 @@ def scan(listing_json: str) -> str:
         "tables": len(inv.tables),
         "images": len(inv.images),
         "dicom": sum(1 for _p, k in inv.images if k == "dicom"),
+        "documents": len(inv.documents),
+        "archives": len(archives),
         "other": len(inv.other),
-        "columns": [{"name": h, "action": d["action"]}
+        "columns": [{"name": h, "action": d["action"], "action_business": d["action_business"]}
                     for h, d in sorted(inv.headers.items(), key=lambda kv: kv[0].lower())],
         "labels": [[a, rules.ACTION_LABELS[a]] for a in rules.ACTIONS],
     })
 
 
 def start(opts_json: str) -> str:
-    """Process all spreadsheets, then pick the images for the sample. Returns the image
-    paths the page must write to the file system before calling make_jobs()."""
+    """Pick the documents and images for the sample. Returns the paths the page must
+    write to the file system before calling prepare()."""
     o = json.loads(opts_json)
     inv = R["inv"]
     for d in ("share", "private"):
@@ -75,11 +92,26 @@ def start(opts_json: str) -> str:
                        share_dir=os.path.join(WORK, "share"),
                        private_dir=os.path.join(WORK, "private"),
                        sample_rows=int(o.get("rows", 500)),
-                       sample_images=int(o.get("images", 25)), progress=_progress)
+                       sample_images=int(o.get("images", 25)),
+                       sample_docs=int(o.get("docs", 100)),
+                       keep_dates=bool(o.get("keep_dates", False)), progress=_progress)
     R["run"] = run
-    run.tables()
+    docs = run.choose_documents()
     R["chosen"] = run.choose_images()
-    return json.dumps([p for p, _k in R["chosen"]])
+    return json.dumps(docs + [p for p, _k in R["chosen"]])
+
+
+def prepare() -> None:
+    """Documents (read, learn people), spreadsheets, then documents (write)."""
+    run = R["run"]
+    run.learn_people()
+    run.tables()
+    run.documents()
+    for p in run.chosen_docs:
+        try:
+            os.remove(p)  # free browser memory as we go
+        except OSError:
+            pass
 
 
 def make_jobs() -> int:
@@ -118,7 +150,7 @@ def finish() -> str:
     s = R["summary"]
     return json.dumps({k: s[k] for k in ("images_ok", "images_with_text", "review",
                                          "other_files", "tables", "table_rows",
-                                         "cancelled")})
+                                         "documents_written", "cancelled")})
 
 
 def package_files(answers_json: str) -> str:
@@ -128,7 +160,27 @@ def package_files(answers_json: str) -> str:
         os.remove(os.path.join(WORK, "out", f))
     r = package.build_package(R["summary"], json.loads(answers_json),
                               os.path.join(WORK, "out"))
-    key = os.path.join(R["run"].private, "patient_code_crosswalk.csv")
-    r["key"] = key if os.path.exists(key) else None
+    # one private key file: study codes, plus the people labels when documents were used
+    import csv
+    import io
+
+    priv = R["run"].private
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["kind", "code_or_label", "original"])
+    cw = os.path.join(priv, "patient_code_crosswalk.csv")
+    if os.path.exists(cw):
+        with open(cw, encoding="utf-8") as f:
+            for row in list(csv.reader(f))[1:]:
+                w.writerow(["study code", row[1], row[0]])
+    pk = os.path.join(priv, "people_key.csv")
+    if os.path.exists(pk):
+        with open(pk, encoding="utf-8-sig") as f:
+            for row in list(csv.reader(f))[1:]:
+                w.writerow(["person", row[0], f"{row[1]} | {row[2]}".strip(" |")])
+    key = os.path.join(WORK, "out", "private_key.csv")
+    with open(key, "w", encoding="utf-8-sig", newline="") as f:
+        f.write(buf.getvalue())
+    r["key"] = key if buf.getvalue().count("\n") > 1 else None
     r["review_files"] = R["summary"]["review"] - R["summary"]["other_files"]
     return json.dumps(r)

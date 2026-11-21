@@ -50,6 +50,7 @@ def main(src, shots):
                 if js("document.getElementById('scan-out').style.display") == "block":
                     break
                 time.sleep(0.5)
+            js("selKind(document.querySelector('#kind .opt[data-v=\"business\"]'))")
             js("document.querySelector('details').open=true")
             snap("3_data")
             js("document.querySelector('details').open=false")

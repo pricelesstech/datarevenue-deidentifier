@@ -6,6 +6,13 @@ Web (`web/ocr.js`, same PP-OCRv4 detection model). Files never leave the browser
 `python tools/build_web.py` (output `web/dist`, a static site); `.github/workflows/pages.yml`
 publishes it to GitHub Pages on push to main. Sample mode only (max 200 images).
 
+**Formats (v1.3):** spreadsheets (CSV, XLSX, XLS), documents and emails (`deid/documents.py`:
+.msg with attachments, .eml, PDF text layer, DOCX/DOC/ODT/PPTX/RTF/HTML; output is a cleaned
+.txt per document), images (DICOM, JPG, PNG, TIFF, BMP), and zips (opened safely, 3 levels).
+People in documents become consistent labels (`deid/people.py`). The client picks
+**business** data (business dates kept, birth dates cut, business IDs like "PO Number" kept)
+or **health** data (Safe Harbor, every date cut to the year). Test files: `tools/make_doc_fixtures.py`.
+
 **Desktop version:** the same engine packaged for Windows/macOS (below).
 
 Free desktop app (Windows + macOS) that Data Revenue clients download to make a safe data

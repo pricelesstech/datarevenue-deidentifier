@@ -12,10 +12,16 @@ import os
 import re
 from dataclasses import dataclass, field
 
+import warnings
+
 from . import rules
 from .crosswalk import Crosswalk
 
-TABLE_EXTS = {".csv", ".xlsx", ".xlsm", ".txt", ".tsv"}
+# workbook page headers/footers we never read; openpyxl warns about odd ones
+warnings.filterwarnings("ignore", message="Cannot parse header or footer", module="openpyxl")
+warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
+
+TABLE_EXTS = {".csv", ".xlsx", ".xlsm", ".xls", ".txt", ".tsv"}
 
 # words that appear in name fields but are not names
 _NAME_STOP = {"jr", "sr", "ii", "iii", "iv", "dr", "md", "dds", "dmd", "do", "rn", "np",
@@ -54,6 +60,36 @@ def iter_sheets(path: str):
                     yield ws.title, header, body
         finally:
             wb.close()
+    elif ext == ".xls":  # Excel 97-2003
+        import xlrd
+
+        book = xlrd.open_workbook(path, on_demand=True)
+        try:
+            for si in range(book.nsheets):
+                sh = book.sheet_by_index(si)
+                rows = []
+                for r in range(sh.nrows):
+                    row = []
+                    for c in range(sh.ncols):
+                        cell = sh.cell(r, c)
+                        v = cell.value
+                        if cell.ctype == xlrd.XL_CELL_DATE:
+                            try:
+                                v = xlrd.xldate.xldate_as_datetime(v, book.datemode)
+                            except Exception:  # noqa: BLE001
+                                pass
+                        elif cell.ctype in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
+                            v = None
+                        elif cell.ctype == xlrd.XL_CELL_NUMBER and float(v).is_integer():
+                            v = int(v)
+                        row.append(v)
+                    rows.append(row)
+                header, body = _split_header(rows)
+                if header is not None:
+                    yield sh.name, header, body
+                book.unload_sheet(si)
+        finally:
+            book.release_resources()
     else:
         enc, dialect = _read_text_file(path)
         with open(path, newline="", encoding=enc) as f:
@@ -64,16 +100,35 @@ def iter_sheets(path: str):
 
 
 def _split_header(rows):
-    for i, r in enumerate(rows):
-        if any(c not in (None, "") for c in r):
-            header = ["" if c is None else str(c).strip() for c in r]
-            width = len(header)
-            body = []
-            for row in rows[i + 1:]:
-                row = list(row) + [None] * (width - len(row))
-                body.append(row[:width] if len(row) > width else row)
-            return header, body
-    return None, []
+    """Find the header row. Business spreadsheets often start with a title ("RFI LOG",
+    "Job 2201") or a few form fields above the real column headers, so the header is the
+    first of the top 20 rows that is at least half as wide as the widest row and mostly
+    text; if none qualifies, the first non-empty row."""
+    def filled(r):
+        return [c for c in r if c not in (None, "")]
+
+    top = rows[:20]
+    widest = max((len(filled(r)) for r in top), default=0)
+    pick = None
+    for i, r in enumerate(top):
+        f = filled(r)
+        if widest >= 2 and len(f) >= max(2, widest / 2) and \
+                sum(isinstance(c, str) for c in f) >= 0.6 * len(f):
+            pick = i
+            break
+    if pick is None:
+        pick = next((i for i, r in enumerate(rows) if filled(r)), None)
+    if pick is None:
+        return None, []
+    r = rows[pick]
+    last = max((j for j, c in enumerate(r) if c not in (None, "")), default=-1)
+    header = ["" if c is None else str(c).strip() for c in r[:last + 1]]
+    width = len(header)
+    body = []
+    for row in rows[pick + 1:]:
+        row = list(row) + [None] * (width - len(row))
+        body.append(row[:width] if len(row) > width else row)
+    return header, body
 
 
 def scan_headers(paths: list[str]) -> dict[str, dict]:
@@ -95,6 +150,7 @@ def scan_headers(paths: list[str]) -> dict[str, dict]:
             continue
     for h, d in seen.items():
         d["action"] = rules.classify_values(h, values.get(h, []))
+        d["action_business"] = rules.for_business(h, d["action"])
     return seen
 
 
@@ -121,11 +177,16 @@ def collect(paths, actions: dict, crosswalk: Crosswalk) -> set[str]:
                 for row in rows:
                     for i in idx_name:
                         v = row[i]
-                        if v not in (None, ""):
-                            for w in rules._WORD.findall(str(v)):
-                                w = w.lower().strip("'-")
-                                if len(w) >= 2 and w not in _NAME_STOP:
-                                    names.add(w)
+                        if v in (None, ""):
+                            continue
+                        words = rules._WORD.findall(str(v))
+                        if len(words) > 5:  # a sentence, not a name: harvest nothing
+                            continue
+                        for w in words:
+                            lw = w.lower().strip("'-")
+                            if len(lw) >= 2 and lw not in _NAME_STOP \
+                                    and lw not in rules.COMMON_WORDS:
+                                names.add(lw)
                     for i in idx_code:
                         crosswalk.code_for(row[i])
         except Exception:
@@ -144,8 +205,11 @@ def _cell(value, action: str, header: str, crosswalk: Crosswalk, names: set, hit
         return rules.to_age(value)
     if value is None or value == "":
         return value
+    keep_dates = rules.KEEP_DATES and not rules.is_birth_header(header)
     if isinstance(value, (_dt.date, _dt.datetime, _dt.time)):
-        # a date sitting in a column marked keep: Safe Harbor still allows only the year
+        if keep_dates:  # business mode: a business date keeps its value
+            return value
+        # health mode: Safe Harbor allows only the year
         hits["date"] = hits.get("date", 0) + 1
         return value.year if not isinstance(value, _dt.time) else ""
     if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -161,17 +225,28 @@ def _cell(value, action: str, header: str, crosswalk: Crosswalk, names: set, hit
         return value
     s = str(value)
     if action == rules.TEXT:
-        s = rules.scrub_patterns(s, rules.TEXT_PATTERNS, hits)
+        s = rules.scrub_patterns(s, rules.text_patterns(), hits)
         return rules.scrub_names(s, names, hits)
     if rules.RE_DATE.fullmatch(s.strip()):
+        if keep_dates:
+            return s
         # a lone date in a kept column: keep the year, as Safe Harbor allows
         hits["date"] = hits.get("date", 0) + 1
         return rules.to_year(s, header)
-    return rules.scrub_patterns(s, rules.SAFETY_PATTERNS, hits)
+    s = rules.scrub_patterns(s, rules.safety_patterns(), hits)
+    return rules.scrub_names(s, names, hits) if names else s
+
+
+def _clean_header(h: str, names: set) -> str:
+    s = rules.scrub_patterns(str(h), rules.text_patterns(), {})
+    if names:  # capitalized name words only: "Mr. Okafor" yes, "Contact" no
+        s = re.sub(r"[A-Z][A-Za-z'\-]+",
+                   lambda m: "[NAME]" if m.group(0).lower() in names else m.group(0), s)
+    return s
 
 
 def safe_filename(stem: str, names: set) -> str:
-    stem = rules.scrub_patterns(stem, rules.TEXT_PATTERNS, {})
+    stem = rules.scrub_patterns(stem, rules.text_patterns(), {})
     stem = rules.scrub_names(stem, names, {})
     stem = re.sub(r"[\[\]]", "", stem)
     stem = re.sub(r"[^A-Za-z0-9 _\-.]+", "_", stem).strip(" ._") or "table"
@@ -189,7 +264,7 @@ def write_one(path: str, out_dir: str, actions: dict, crosswalk: Crosswalk, name
 
     ext = os.path.splitext(path)[1].lower()
     stem = safe_filename(os.path.splitext(os.path.basename(path))[0], names)
-    out_ext = ".xlsx" if ext in (".xlsx", ".xlsm") else ".csv"
+    out_ext = ".xlsx" if ext in (".xlsx", ".xlsm", ".xls") else ".csv"
     out_name = stem + "_deidentified" + out_ext
     n = 2
     while out_name.lower() in used_names:
@@ -207,13 +282,16 @@ def write_one(path: str, out_dir: str, actions: dict, crosswalk: Crosswalk, name
         for si, (sheet, header, rows) in enumerate(sheets):
             keep_idx = [i for i, h in enumerate(header)
                         if actions.get(h, rules.KEEP) not in (rules.REMOVE, rules.NAME)]
-            out_header = [header[i] for i in keep_idx]
+            # headers go out too (in the file, the report and the summary), so they are
+            # cleaned like any text: a form's "Attention: Mr. Smith" row can be the header
+            clean = {h: _clean_header(h, names) for h in header}
+            out_header = [clean[header[i]] for i in keep_idx]
             rows = [r for r in rows if not all(c in (None, "") for c in r)]
             keep_rows = None
             if sample_rows is not None and len(rows) > sample_rows:
                 keep_rows = set(random.Random(f"{seed}:{path}:{si}").sample(
                     range(len(rows)), sample_rows))
-            profs = [ColumnProfile(h, actions.get(h, rules.KEEP)) for h in header]
+            profs = [ColumnProfile(clean[h], actions.get(h, rules.KEEP)) for h in header]
             out_rows = []
             for ri, row in enumerate(rows):
                 o = []
@@ -222,14 +300,14 @@ def write_one(path: str, out_dir: str, actions: dict, crosswalk: Crosswalk, name
                     if a in (rules.REMOVE, rules.NAME):
                         profs[i].add(row[i])
                         continue
-                    hh = res.hits.setdefault(h, {})
+                    hh = res.hits.setdefault(clean[h], {})
                     v = _cell(row[i], a, h, crosswalk, names, hh)
                     profs[i].add(v)
                     o.append(v)
                 if keep_rows is None or ri in keep_rows:
                     out_rows.append(o)
             for h in header:
-                res.columns[h] = actions.get(h, rules.KEEP)
+                res.columns[clean[h]] = actions.get(h, rules.KEEP)
             res.rows += len(out_rows)
             res.source_rows += len(rows)
             res.sheets += 1
