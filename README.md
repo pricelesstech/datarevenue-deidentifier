@@ -13,6 +13,19 @@ People in documents become consistent labels (`deid/people.py`). The client pick
 **business** data (business dates kept, birth dates cut, business IDs like "PO Number" kept)
 or **health** data (Safe Harbor, every date cut to the year). Test files: `tools/make_doc_fixtures.py`.
 
+**Inventory mode (v1.4, desktop only):** `deid/inventory.py` + `deid/inventory_report.py`.
+"Inventory a whole drive" on the first screen counts everything on a drive or folders (built
+for multi-terabyte drives) for a quote, copying and changing nothing: files and size by type,
+extension, year and folder; records in spreadsheets (CSV/XLSX/XLS) and SQLite databases;
+kinds of personal data judged from COLUMN NAMES only; zip contents from the zip index (never
+unpacked); likely duplicates (same size + head/middle/tail fingerprint, files of 1 MB+);
+largest files. OneDrive/Dropbox online-only files are counted but never opened (opening
+downloads them). Output: `DataRevenue_Inventory_<Company>_<date>.zip` (HTML report, JSON with
+the buyer answers, CSVs). Folder/file names are hidden (Folder 1, Spreadsheet 3) unless the
+client ticks "Show folder and file names". The full file list with names goes only to the
+private folder. Headless: `app --inventory <drive or folder> <out>`. Live server databases
+are measured with the DRC scanner instead.
+
 **Desktop version:** the same engine packaged for Windows/macOS (below).
 
 Free desktop app (Windows + macOS) that Data Revenue clients download to make a safe data

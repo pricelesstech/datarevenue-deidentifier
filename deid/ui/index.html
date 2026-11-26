@@ -96,7 +96,25 @@ select{font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:7
     <div><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.2"><path d="M12 3l8 3v6c0 5-3.4 8.8-8 10-4.6-1.2-8-5-8-10V6z"/></svg></div><b>Removes identifiers</b><span>Names, IDs, dates, addresses, and text printed on images (HIPAA Safe Harbor).</span></div>
     <div><div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.2"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/></svg></div><b>One file to send</b><span>A small sample plus a summary of your whole data set.</span></div>
   </div>
-  <button class="btn" onclick="go('details')">Get started</button>
+  <div class="row"><button class="btn" onclick="startFlow('sample')">Get started</button><button class="btn ghost" onclick="startFlow('inventory')">Inventory a whole drive</button></div>
+  <p class="hint" style="margin-top:12px"><b>Inventory a whole drive</b> counts everything on a drive or folder (any size, even several terabytes) for a quote: how much data, what kinds, which years, and what personal data it holds. Nothing is copied or changed.</p>
+</section>
+
+<!-- 3b inventory: pick drives / folders -->
+<section class="screen" id="s-inv">
+  <h2>Choose what to inventory</h2>
+  <p class="lead">Pick a whole drive or one or more folders. The program counts every file in them. It reads sizes, types and dates, and opens spreadsheets only to count records and read column names. Your files are never changed or copied.</p>
+  <div id="drives" class="choice"></div>
+  <div class="drop" id="inv-drop" style="padding:22px 20px">
+    <b style="font-size:16px;margin-top:0">Or drag a folder here</b>
+    <div class="row" style="justify-content:center;margin-top:10px"><button class="btn ghost" onclick="pickInv()">Choose a folder</button></div>
+  </div>
+  <div class="chips" id="inv-chips"></div>
+  <label class="row" style="margin-top:6px;gap:8px"><input type="checkbox" id="inv-dups" checked> Look for duplicate files (adds a few minutes on large drives)</label>
+  <label class="row" style="margin-top:6px;gap:8px"><input type="checkbox" id="inv-names"> Show folder and file names in the report</label>
+  <div class="hint" style="margin-left:24px">Leave this off if folder or file names include customer or patient names. They are then shown as Folder 1, Folder 2 and so on.</div>
+  <div class="err" id="inv-err"></div>
+  <div class="row" style="margin-top:18px"><button class="btn ghost" onclick="go('details')">Back</button><span class="spacer"></span><button class="btn" id="inv-start" disabled onclick="startInventory()">Start inventory</button></div>
 </section>
 
 <!-- 2 details -->
@@ -163,7 +181,7 @@ select{font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:7
 
 <!-- 5 working -->
 <section class="screen" id="s-working">
-  <div class="center"><div class="spin"></div><h2>Finishing your sample</h2><p class="lead" id="w-msg">Almost done...</p>
+  <div class="center"><div class="spin"></div><h2 id="w-title">Finishing your sample</h2><p class="lead" id="w-msg">Almost done...</p>
   <div class="pbar" style="max-width:420px;margin:0 auto"><i id="pbar2"></i></div>
   <p><button class="btn link" onclick="api().cancel()">Stop</button></p></div>
 </section>
@@ -172,25 +190,26 @@ select{font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:7
 <section class="screen" id="s-done">
   <div class="done-ico"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0E8C8C" stroke-width="2.6" stroke-linecap="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
   <h1 id="done-title">Your sample is ready</h1>
-  <p class="lead">Send this one file to your Data Revenue contact. It contains only de-identified data.</p>
+  <p class="lead" id="done-lead">Send this one file to your Data Revenue contact. It contains only de-identified data.</p>
   <div class="file"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B2A4A" stroke-width="1.6"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M10 13h4M10 17h4"/></svg><div><b id="zip-name"></b><span class="hint" id="zip-meta"></span></div></div>
   <div class="row"><button class="btn" onclick="api().reveal(state.zip)">Show the file</button><button class="btn ghost" onclick="api().open_path(state.html)">See the summary</button></div>
   <div id="done-warn"></div>
-  <div class="warn"><b>Keep private, never send:</b> the folder <span id="priv"></span>. It holds the key that links study codes back to your own customer, patient or account numbers.</div>
-  <p class="hint">Before sending, open a few images and spreadsheets from the summary folder and make sure nothing identifying is visible.</p>
-  <button class="btn link" onclick="location.reload()">Make another sample</button>
+  <div class="warn" id="priv-warn"><b>Keep private, never send:</b> the folder <span id="priv"></span>. It holds the key that links study codes back to your own customer, patient or account numbers.</div>
+  <p class="hint" id="done-hint">Before sending, open a few images and spreadsheets from the summary folder and make sure nothing identifying is visible.</p>
+  <button class="btn link" id="again" onclick="location.reload()">Make another sample</button>
 </section>
 </main>
 
 <script>
-const state = {mode:"sample", inv:null, actions:{}, answers:{datasets:[{}], company:{}}, zip:null, html:null, poll:null, wantFinish:false};
+const state = {flow:"sample", mode:"sample", inv:null, actions:{}, answers:{datasets:[{}], company:{}}, zip:null, html:null, poll:null, wantFinish:false, invPaths:[]};
 const order = ["welcome","details","data","questions","working","done"];
+const INV = () => state.flow === "inventory";
 let Q = null;
 const api = () => window.pywebview.api;
 
 function go(name){
   document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on", s.id==="s-"+name));
-  const idx = Math.min(order.indexOf(name), 4);
+  const idx = Math.min(order.indexOf(name === "inv" ? "data" : name), 4);
   document.querySelectorAll("#steps div").forEach((d,i)=>d.classList.toggle("on", i<=idx));
   document.getElementById("main").scrollTop = 0;
 }
@@ -203,7 +222,68 @@ function saveDetails(){
   if(e && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){document.getElementById("details-err").textContent="That email does not look right.";return}
   document.getElementById("details-err").textContent="";
   state.answers.contact = {company:c, name:document.getElementById("person").value.trim(), email:e};
-  go("data");
+  if(INV()){ go("inv"); loadDrives(); } else go("data");
+}
+
+// ── inventory flow ──
+function startFlow(flow){
+  state.flow = flow;
+  api().set_mode(flow);
+  document.querySelector("#s-details h2").textContent = INV() ? "Whose data is this?" : "Who is this sample from?";
+  go("details");
+}
+function fmtBytes(n){
+  if(n>=1e12) return (n/1e12).toFixed(2)+" TB";
+  if(n>=1e9) return (n/1e9).toFixed(1)+" GB";
+  if(n>=1e6) return (n/1e6).toFixed(1)+" MB";
+  return Math.round(n/1e3)+" KB";
+}
+async function loadDrives(){
+  const ds = await api().drives();
+  document.getElementById("drives").innerHTML = ds.map((d,i)=>
+    `<div class="opt multi" data-i="${i}" onclick="toggleDrive(this)"><span class="dot"></span><div><b>${esc(d.label)}</b> <span class="hint">${esc(d.path)}</span><small>${fmtBytes(d.used)} used of ${fmtBytes(d.total)}</small></div></div>`).join("");
+  state.drives = ds;
+}
+function toggleDrive(el){
+  const p = state.drives[el.dataset.i].path;
+  if(el.classList.toggle("sel")) addInvPaths([p]);
+  else { state.invPaths = state.invPaths.filter(x=>x!==p); renderInv(); }
+}
+async function pickInv(){
+  const r = await api().pick("folder");
+  if(r && r.length) addInvPaths(r);
+}
+window.onInvPaths = function(paths){
+  document.getElementById("scan-busy").style.display="none";
+  if(!paths || !paths.length){document.getElementById("inv-err").textContent="Could not read the dropped items. Try Choose a folder instead."; return}
+  addInvPaths(paths);
+};
+function addInvPaths(paths){
+  paths.forEach(p=>{ if(p && !state.invPaths.includes(p)) state.invPaths.push(p); });
+  renderInv();
+}
+function renderInv(){
+  document.getElementById("inv-chips").innerHTML = state.invPaths.map((p,i)=>
+    `<span class="chip"><b>${esc(p)}</b> <a href="#" onclick="removeInv(${i});return false" style="color:var(--mute)">remove</a></span>`).join("");
+  document.getElementById("inv-start").disabled = !state.invPaths.length;
+  document.getElementById("inv-err").textContent = "";
+}
+function removeInv(i){
+  const p = state.invPaths[i];
+  state.invPaths.splice(i,1);
+  document.querySelectorAll("#drives .opt").forEach(o=>{ if(state.drives[o.dataset.i].path===p) o.classList.remove("sel"); });
+  renderInv();
+}
+async function startInventory(){
+  const r = await api().start_inventory({paths: state.invPaths, company: state.answers.contact.company,
+    duplicates: document.getElementById("inv-dups").checked, show_names: document.getElementById("inv-names").checked});
+  if(r && r.error){document.getElementById("inv-err").textContent=r.error; return}
+  document.querySelector("#s-questions h2").textContent = "While we count: a few questions";
+  document.querySelector("#s-questions .lead").textContent = "About 3 minutes. These are the questions AI and data buyers ask first. Best guesses are fine. A large drive can take a while to count; you can answer these and leave the window open.";
+  document.getElementById("w-title").textContent = "Finishing your inventory";
+  buildQuestions();
+  go("questions");
+  state.poll = setInterval(poll, 700);
 }
 
 async function pick(kind){
@@ -289,12 +369,12 @@ async function startRun(){
 
 async function poll(){
   const s = await api().status();
-  const pct = s.total ? Math.round(100*s.n/s.total) : 0;
+  const pct = s.total ? Math.min(99, Math.round(100*s.n/s.total)) : 0;
   ["pbar","pbar2"].forEach(id=>document.getElementById(id).style.width = (s.done?100:pct)+"%");
-  document.getElementById("pmsg").textContent = s.done ? "Your data is de-identified." : s.msg;
+  document.getElementById("pmsg").textContent = s.done ? (INV() ? "Your inventory is counted." : "Your data is de-identified.") : s.msg;
   document.getElementById("ppct").textContent = s.done ? "Done" : (s.total>1 ? pct+"%" : "");
   document.getElementById("w-msg").textContent = s.done ? "Packaging..." : s.msg;
-  if(s.error){clearInterval(state.poll); alert("Something went wrong: "+s.error); go("data"); return}
+  if(s.error){clearInterval(state.poll); alert("Something went wrong: "+s.error); go(INV() ? "inv" : "data"); return}
   if(s.done && state.wantFinish){clearInterval(state.poll); finish();}
 }
 
@@ -341,8 +421,21 @@ function submitAnswers(){
   poll();
 }
 async function finish(){
-  const r = await api().finish(state.answers);
+  const r = INV() ? await api().finish_inventory(state.answers) : await api().finish(state.answers);
   if(r.error){alert(r.error); go("questions"); return}
+  if(INV()){
+    state.zip=r.zip; state.html=r.html;
+    document.getElementById("zip-name").textContent = r.zip.split(/[\\/]/).pop();
+    document.getElementById("zip-meta").textContent = `${r.size_mb} MB  |  ${r.files.toLocaleString()} files, ${fmtBytes(r.bytes)} counted  |  saved in ${r.folder}`;
+    document.getElementById("done-title").textContent = r.cancelled ? "Stopped early: your inventory is partial" : "Your inventory is ready";
+    document.getElementById("done-lead").textContent = "Send this one file to your Data Revenue contact for your quote. It holds counts, sizes, types and years, plus your answers. No file contents.";
+    document.getElementById("priv-warn").innerHTML = `<b>For you only:</b> a full list of every file is saved at <span>${esc(r.file_list)}</span>. It includes file names, so it is not in the file to send.`;
+    document.getElementById("done-hint").textContent = "Open the report (See the summary) to check it before sending.";
+    document.getElementById("done-warn").innerHTML = "";
+    document.getElementById("again").textContent = "Start over";
+    go("done");
+    return;
+  }
   state.zip=r.zip; state.html=r.html;
   document.getElementById("zip-name").textContent = r.zip.split(/[\\/]/).pop();
   document.getElementById("zip-meta").textContent = `${r.size_mb} MB  |  saved in ${r.folder}`;
@@ -361,7 +454,10 @@ const drop = document.getElementById("drop");
 ["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over")}));
 ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over")}));
 document.addEventListener("dragover", e=>e.preventDefault());
-document.addEventListener("drop", e=>{e.preventDefault(); document.getElementById("scan-busy").style.display="block";});
+document.addEventListener("drop", e=>{e.preventDefault(); if(!INV()) document.getElementById("scan-busy").style.display="block";});
+const invDrop = document.getElementById("inv-drop");
+["dragenter","dragover"].forEach(ev=>invDrop.addEventListener(ev,e=>{e.preventDefault();invDrop.classList.add("over")}));
+["dragleave","drop"].forEach(ev=>invDrop.addEventListener(ev,e=>{e.preventDefault();invDrop.classList.remove("over")}));
 </script>
 </body>
 </html>

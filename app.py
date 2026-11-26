@@ -15,7 +15,7 @@ import subprocess
 import sys
 import threading
 
-from deid import __version__, package, pipeline, rules
+from deid import __version__, inventory, inventory_report, package, pipeline, rules
 
 
 def resource(*parts: str) -> str:
@@ -123,9 +123,69 @@ class Api:
     def _on_drop(self, event):
         files = (event.get("dataTransfer") or {}).get("files") or []
         paths = [f.get("pywebviewFullPath") for f in files if f.get("pywebviewFullPath")]
+        if self._ui_mode == "inventory":  # inventory: just hand the paths to the page
+            self._window.evaluate_js(f"window.onInvPaths({json.dumps(paths)})")
+            return
         r = self.scan(paths) if paths else {"error": "Could not read the dropped items. "
                                                       "Try Choose a folder instead."}
         self._window.evaluate_js(f"window.onScanned({json.dumps(r)})")
+
+    # ── inventory mode: count everything on a drive, copy nothing ──
+    _ui_mode = "sample"
+
+    def set_mode(self, mode):
+        self._ui_mode = "inventory" if mode == "inventory" else "sample"
+
+    def drives(self):
+        try:
+            return inventory.list_drives()
+        except Exception:  # noqa: BLE001
+            return []
+
+    def start_inventory(self, opts):
+        paths = [p for p in (opts.get("paths") or []) if p and os.path.exists(p)]
+        if not paths:
+            return {"error": "Choose a drive or folder first."}
+        company = package.safe_company(opts.get("company", ""))
+        stamp = _dt.datetime.now().strftime("%Y-%m-%d %H%M")
+        self._run_dir = os.path.join(self._base, f"{company} inventory {stamp}")
+        os.makedirs(self._run_dir, exist_ok=True)
+        file_list = os.path.join(self._private, f"{company} {stamp} full file list.csv")
+        self._inv_opts = {"show_names": bool(opts.get("show_names", False)),
+                          "file_list": file_list}
+        self._cancel.clear()
+        self._summary = None
+        self._status = {"msg": "Starting", "n": 0, "total": 0, "done": False, "error": None}
+
+        def prog(msg, n, total):
+            self._status.update(msg=msg, n=n, total=total)
+
+        def work():
+            try:
+                self._summary = inventory.run_inventory(
+                    paths, progress=prog, cancel=self._cancel, private_list=file_list,
+                    find_duplicates=bool(opts.get("duplicates", True)))
+                self._status["done"] = True
+            except Exception as e:  # noqa: BLE001
+                self._status["error"] = f"{type(e).__name__}: {e}"
+
+        threading.Thread(target=work, daemon=True).start()
+        return {"ok": True}
+
+    def finish_inventory(self, answers):
+        if not self._summary:
+            return {"error": "Still working. Please wait a moment."}
+        try:
+            r = inventory_report.build_inventory_package(
+                self._summary, answers, self._run_dir,
+                show_names=self._inv_opts["show_names"])
+        except Exception as e:  # noqa: BLE001
+            return {"error": f"Could not build the file: {e}"}
+        t = self._summary["total"]
+        r.update(folder=self._run_dir, private_dir=self._private,
+                 file_list=self._inv_opts["file_list"], files=t["files"], bytes=t["bytes"],
+                 cancelled=not self._summary["complete"])
+        return r
 
     # ── run ──
     def start(self, opts):
@@ -201,10 +261,29 @@ def _cli(src: str, out: str) -> None:
         json.dump(s, f, indent=2, default=str)
 
 
+def _cli_inventory(src: str, out: str) -> None:
+    """Headless inventory: <app> --inventory <drive or folder> <output folder>.
+    Writes the inventory zip to <out> and the full file list to <out>/private."""
+    os.makedirs(out, exist_ok=True)
+    inv = inventory.run_inventory(
+        [src], private_list=os.path.join(out, "private", "full file list.csv"),
+        progress=lambda m, n, t: print(m, flush=True))
+    answers = {"contact": {"company": "CLI Test"}, "datasets": [{"name": "test"}],
+               "company": {}}
+    r = inventory_report.build_inventory_package(inv, answers, out, show_names=False)
+    with open(os.path.join(out, "cli_inventory.json"), "w", encoding="utf-8") as f:
+        json.dump({"total": inv["total"], "package": r}, f, indent=2, default=str)
+    print(f"Done: {inv['total']['files']:,} files, {inv['total']['bytes'] / 1e9:,.2f} GB -> "
+          f"{r['zip']}")
+
+
 def main():
     multiprocessing.freeze_support()
     if len(sys.argv) == 4 and sys.argv[1] == "--cli":
         _cli(sys.argv[2], sys.argv[3])
+        return
+    if len(sys.argv) == 4 and sys.argv[1] == "--inventory":
+        _cli_inventory(sys.argv[2], sys.argv[3])
         return
     import webview
     from webview.dom import DOMEventHandler

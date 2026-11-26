@@ -41,6 +41,9 @@ jobs:
           Start-Process -Wait -FilePath $exe -ArgumentList "--cli","`"$env:RUNNER_TEMP\in`"","`"$env:RUNNER_TEMP\out`""
           $j = Get-Content "$env:RUNNER_TEMP\out\cli_summary.json" | ConvertFrom-Json
           if ($j.images_ok -ne 4 -or $j.tables -ne 2) { throw "smoke test failed: $($j | ConvertTo-Json -Depth 2)" }
+          Start-Process -Wait -FilePath $exe -ArgumentList "--inventory","`"$env:RUNNER_TEMP\in`"","`"$env:RUNNER_TEMP\inv`""
+          $k = Get-Content "$env:RUNNER_TEMP\inv\cli_inventory.json" | ConvertFrom-Json
+          if ($k.total.files -lt 6) { throw "inventory smoke test failed: $($k | ConvertTo-Json -Depth 3)" }
       - name: Sign app (only if a signing certificate is configured)
         if: env.HAS_WIN_CERT == 'true'
         env:
@@ -94,6 +97,8 @@ jobs:
           python tools/make_samples.py "$RUNNER_TEMP/in"
           "dist/Data Revenue De-Identifier.app/Contents/MacOS/Data Revenue De-Identifier" --cli "$RUNNER_TEMP/in" "$RUNNER_TEMP/out"
           python -c "import json,sys; j=json.load(open('$RUNNER_TEMP/out/cli_summary.json')); sys.exit(0 if j['images_ok']==4 and j['tables']==2 else 'smoke test failed: '+json.dumps(j)[:800])"
+          "dist/Data Revenue De-Identifier.app/Contents/MacOS/Data Revenue De-Identifier" --inventory "$RUNNER_TEMP/in" "$RUNNER_TEMP/inv"
+          python -c "import json,sys; k=json.load(open('$RUNNER_TEMP/inv/cli_inventory.json')); sys.exit(0 if k['total']['files']>=6 else 'inventory smoke test failed: '+json.dumps(k)[:800])"
       - name: Sign and notarize (only if an Apple Developer ID is configured)
         if: env.HAS_MAC_CERT == 'true'
         env:
